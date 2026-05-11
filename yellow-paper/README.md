@@ -1,6 +1,7 @@
 # PaperProof Yellow Paper
 
-This directory is for the formal PaperProof yellow paper.
+This directory contains the LaTeX version of the formal PaperProof protocol
+yellow paper.
 
 ## Purpose
 
@@ -8,6 +9,15 @@ The yellow paper should be the protocol specification. It should define the
 core objects, state transitions, event model, validation rules, governance
 logic, indexing rules, deployment manifest expectations, and SDK-facing
 contracts with enough precision for developers, auditors, and indexer builders.
+
+## Copyright and Use
+
+The LaTeX yellow paper includes a dedicated copyright and use notice. In short,
+it is published for review, citation, education, auditing, SDK development,
+indexing, and integration with official PaperProof Protocol deployments. It does
+not grant trademark rights, official deployment identity, permission to imply
+endorsement, or a license to copy contract source code beyond the licenses that
+apply to those separate materials.
 
 ## Target Audience
 
@@ -18,14 +28,23 @@ contracts with enough precision for developers, auditors, and indexer builders.
 - Protocol contributors.
 - Ecosystem reviewers who need implementation-level clarity.
 
-## Suggested Files
+## Files
 
-- `paperproof-yellow-paper.tex`
-- `refs.bib`
-- `figures/`
-- `appendices/`
+- `paperproof-yellow-paper.tex` - main LaTeX source.
 
-## Suggested Structure
+## Build
+
+Compile with `pdflatex`:
+
+```powershell
+pdflatex -interaction=nonstopmode paperproof-yellow-paper.tex
+pdflatex -interaction=nonstopmode paperproof-yellow-paper.tex
+```
+
+No BibTeX pass is currently required. Source-derived references are listed in
+the final section.
+
+## Structure
 
 1. Notation and Terminology
 2. Protocol Object Inventory

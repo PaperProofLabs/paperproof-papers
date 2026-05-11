@@ -17,14 +17,23 @@ academic paper.
 - Developers deciding whether to build on PaperProof.
 - Potential partners, supporters, and funders.
 
-## Suggested Files
+## Files
 
-- `paperproof-whitepaper.tex`
-- `refs.bib`
-- `figures/`
-- `tokenomics/` or appendix material, if needed later.
+- `paperproof-whitepaper.tex` - main LaTeX source.
+- `paperproof-whitepaper.pdf` - generated PDF after local compilation.
 
-## Suggested Structure
+## Build
+
+Compile with `pdflatex`:
+
+```powershell
+pdflatex -interaction=nonstopmode paperproof-whitepaper.tex
+pdflatex -interaction=nonstopmode paperproof-whitepaper.tex
+```
+
+No BibTeX pass is currently required.
+
+## Structure
 
 1. Executive Summary
 2. Why Durable Artifact Infrastructure Matters
