@@ -1,0 +1,45 @@
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.idx
+*.ilg
+*.ind
+*.lof
+*.log
+*.lot
+*.nav
+*.out
+*.run.xml
+*.snm
+*.synctex
+*.synctex.gz
+*.toc
+*.vrb
+
+# LaTeX temporary directories
+_minted-*/
+build/
+out/
+tmp/
+temp/
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+
+# Local environment and secrets
+.env
+.env.*
+*.local
+
+# Keep generated PDFs intentional.
+# Uncomment this if final PDFs should never be committed:
+# *.pdf
