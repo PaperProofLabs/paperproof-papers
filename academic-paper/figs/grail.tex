@@ -1,0 +1,103 @@
+\documentclass[utf8]{ctexart}
+\usepackage[margin=1cm]{geometry} 
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc, backgrounds, shadows, fit} 
+
+% 定义专业且舒适的色调
+\definecolor{primaryblue}{RGB}{0, 102, 204}
+\definecolor{secondarygreen}{RGB}{0, 153, 76}
+\definecolor{accentorange}{RGB}{255, 128, 0}
+\definecolor{lightgrey}{RGB}{245, 245, 245}
+
+\pagestyle{empty} 
+
+\begin{document}
+
+\centering 
+\begin{tikzpicture}[
+    font=\sffamily,
+    >=Stealth,
+    node distance=1.5cm and 2cm,
+    % 样式定义
+    block/.style={
+        rectangle, draw=primaryblue, fill=white, thick,
+        minimum width=3.5cm, minimum height=1.1cm, align=center,
+        rounded corners=2pt, drop shadow={opacity=0.2}
+    },
+    slm_block/.style={
+        rectangle, draw=secondarygreen, fill=secondarygreen!10, thick,
+        minimum width=3.5cm, minimum height=1.1cm, align=center,
+        rounded corners=15pt, drop shadow={opacity=0.2}
+    },
+    db/.style={
+        cylinder, draw=primaryblue, fill=primaryblue!5, thick,
+        shape border rotate=90, minimum width=2.5cm, minimum height=1.3cm,
+        align=center, aspect=0.25
+    },
+    process/.style={
+        rectangle, draw=accentorange, fill=accentorange!10, thick,
+        minimum width=3.8cm, minimum height=1.2cm, align=center,
+        drop shadow={opacity=0.2}
+    },
+    container/.style={
+        rectangle, draw=gray, dashed, inner sep=15pt, fill=lightgrey!30, rounded corners=5pt
+    },
+    header/.style={font=\bfseries\large, color=darkgray}
+]
+
+    % --- 阶段一：离线数据加工 ---
+    % 修改：添加 xshift=3cm 将整个上方模块向右平移
+    \node[block, xshift=3cm] (metadata) {智能体服务语义表述信息\\(名称、功能描述、使用示例)};
+    \node[block, below=1cm of metadata] (engine) {内容增强与特征提取};
+    
+    % 三种维度的存储
+    \node[db, below=1.2cm of engine] (idx_ctx) {功能语义库\\(整体功能描述)};
+    \node[db, left=1cm of idx_ctx] (idx_tag) {能力标签库\\(核心技术标签)};
+    \node[db, right=1cm of idx_ctx] (idx_int) {具体案例库\\(细粒度使用示例)};
+
+    % 离线连线
+    \draw[->, thick] (metadata) -- (engine);
+    \draw[->, thick] (engine.south) -- ++(0,-0.5) -| (idx_tag);
+    \draw[->, thick] (engine.south) -- (idx_ctx);
+    \draw[->, thick] (engine.south) -- ++(0,-0.5) -| (idx_int);
+
+    % 离线外框
+    \begin{scope}[on background layer]
+        \node[container, fit=(metadata) (idx_tag) (idx_int)] (offline_box) {};
+        \node[header, anchor=north west] at (offline_box.north west) {【离线准备】构建多维度检索索引};
+    \end{scope}
+
+
+    % --- 阶段二：在线实时匹配 ---
+    
+    % 修改：添加 xshift=-3cm。因为上方右移了3cm，这里反向平移3cm可保持下方模块在原位，
+    % 从而实现上方相对于下方右移 3cm 的视觉度效果。
+    \node[slm_block, below=2.5cm of idx_tag, xshift=-3cm] (slm) {轻量级意图识别\\(毫秒级提取核心需求)};
+    \node[circle, draw=black, thick, fill=white, below=1.2cm of slm, align=center] (query) {用户需求\\提问};
+    \node[process, right=1.2cm of slm] (recall) {【粗晒】快速初步筛选\\(从海量数据中缩小范围)};
+    \node[process, right=1.2cm of recall] (rerank) {【精晒】深度意图比对\\(根据具体案例进行精准排序)};
+    \node[block, below=1.2cm of rerank, draw=secondarygreen] (result) {最终推荐列表};
+
+    % 在线连线
+    \draw[->, thick] (query) -- (slm);
+    \draw[->, thick] (slm) -- (recall);
+    \draw[->, thick] (recall) -- (rerank);
+    \draw[->, thick] (rerank) -- (result);
+
+    % 数据库如何支持在线检索 (虚线连接)
+    \draw[->, dashed, color=primaryblue, thick] (idx_tag.south) .. controls +(0,-1.5) and +(-1,1.5) .. (recall.north west);
+    \draw[->, dashed, color=primaryblue, thick] (idx_ctx.south) .. controls +(0,-2.5) and +(0,1.5) .. (recall.north);
+    \draw[->, dashed, color=primaryblue, thick] (idx_int.south) .. controls +(0,-1.5) and +(1,1.5) .. (rerank.north);
+
+    % 在线外框修改：保持左右各增加约 1cm (inner xsep=43.5pt)
+    \begin{scope}[on background layer]
+        \node[container, fit=(slm) (query) (rerank) (result), inner xsep=43.5pt] (online_box) {};
+        \node[header, anchor=north west] at (online_box.north west) {【实时发现】低延迟、高精度的匹配流程};
+    \end{scope}
+
+    % 底部说明
+    \node[below=0.3cm of offline_box, font=\itshape\color{gray}, xshift=-3cm] {优势：通过离线计算大幅减轻在线负担};
+
+\end{tikzpicture}
+
+\end{document}
