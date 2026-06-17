@@ -73,7 +73,11 @@ PaperProof is a Sui-native protocol for durable digital artifacts backed by
 Walrus content storage \cite{sui_platform,walrus_storage}. It treats a work not as a single uploaded file, but as an
 artifact series: a continuing object with typed versions, content commitments,
 official comments, likes, governance-aware parameters, canonical events, and
-developer-facing SDKs. The goal is not to replace academic archives, software
+developer-facing SDKs. Recent protocol surfaces extend this model to
+agent-readable infrastructure: official Copilot prompts are stored as versioned
+PaperProof artifacts, and wallet-linked Copilot memory is discovered through a
+lightweight on-chain registry while private memory bodies remain in MemWal and
+Walrus. The goal is not to replace academic archives, software
 platforms, storage networks, social media, or community forums. The goal is to
 give important digital works a protocol layer beneath and beside those systems.
 
@@ -160,6 +164,13 @@ artifact itself remains scattered.
 PaperProof's vision is to become a durable artifact identity layer for Sui and
 Walrus. It should be small enough to survive, structured enough to integrate,
 and open enough for communities to build multiple applications on top of it.
+
+The concise value proposition is: PaperProof turns Walrus blobs into
+verifiable, versioned, discussable, and agent-readable knowledge artifacts.
+Walrus makes content durable. PaperProof adds the protocol coordinate system
+that lets applications ask what the artifact is, which version is current,
+which interactions are official, and what structured context an agent can
+safely consume.
 
 The first official application is not meant to be the only PaperProof
 application. It is a reference interface: Explore, Publish, Governance, My Space,
@@ -276,6 +287,23 @@ Together, Sui and Walrus make PaperProof possible as a living artifact protocol:
 transactions can represent meaningful artifact actions, while large content
 remains in a storage layer designed for that role.
 
+Neither layer is decorative. Without Sui, artifact identity, ownership,
+version lineage, interaction bindings, governed prompt routes, and official
+memory availability would fall back to application database conventions.
+Without Walrus, PaperProof would become either a thin link registry or a
+conventional hosted website with chain receipts. The protocol value comes from
+combining verifiable object state with durable content workflows.
+
+\subsection{Programmable Workflows, Not Ceremonial Registrations}
+
+PaperProof is designed for artifact actions to feel like normal application
+workflows. Publishing, adding a version, commenting, liking, voting, and
+registering agent-memory capability are composable Sui operations. Where
+compatible, Programmable Transaction Blocks can group related Move calls so
+users approve a coherent workflow rather than a sequence of low-level module
+steps. Walrus reserve and certify phases may still require separate stages, but
+the user experience should expose the meaningful artifact action.
+
 \section{Protocol Layers}
 
 PaperProof can be understood as five layers:
@@ -314,6 +342,61 @@ point. It should not prevent truthful third-party integrations. Third-party
 applications should be free to build on official PaperProof deployments as long
 as they do not misrepresent themselves as official or confuse users about
 authority.
+
+\subsection{First-Party Dogfooding}
+
+The official website is also intended to be one of the first users of the
+protocol. Docs, Blog, and Forum are not merely pages about PaperProof; they can
+be represented by PaperProof artifacts and therefore exercise the same storage,
+versioning, comment, and indexing paths expected from third-party applications.
+
+\begin{table}[h]
+\centering
+\caption{Official app surfaces backed by PaperProof artifacts.}
+\begin{tabularx}{\textwidth}{p{0.22\textwidth}X}
+\toprule
+\textbf{Surface} & \textbf{Protocol-backed behavior} \\
+\midrule
+Docs & Published as artifact series with versioned content. The official comments tree can be locked or archived so documentation remains readable without public discussion threads. \\
+Blog & Published as \code{blog\_post} artifacts with summaries, full content, artifact codes, versions, and official comments. \\
+Forum & Each topic can be represented as a \code{blog\_post} artifact with an official comment tree used as the discussion thread. \\
+Copilot prompts & Published as \code{generic\_file} artifacts and selected through the prompt registry by app route. \\
+Memory descriptor & Published as a prompt artifact that explains Copilot memory semantics, schema, and version policy. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+This dogfooding matters because it turns the official site into a running
+demonstration of the protocol's value. A visitor can see that PaperProof is not
+only a storage idea; it is an application substrate for versioned knowledge,
+discussion, and agent-readable context.
+
+\section{Application Potential}
+
+PaperProof is deliberately broader than a preprint archive. Its core primitive
+is a durable knowledge artifact, which can support both human-facing and
+agent-facing products.
+
+\begin{table}[h]
+\centering
+\caption{Potential application families.}
+\begin{tabularx}{\textwidth}{p{0.24\textwidth}X}
+\toprule
+\textbf{Application family} & \textbf{PaperProof contribution} \\
+\midrule
+Research and open science & Versioned manuscripts, datasets, reproducibility packages, technical reports, and durable citations. \\
+Software communities & Release records, source and package commitments, changelogs, governance evidence, and discussion threads. \\
+Protocol communities & Official docs, blogs, forums, proposal context, audit materials, and upgrade records represented as artifacts. \\
+Agentic workflows & Durable prompts, memory descriptors, reusable reports, datasets, logs, and intermediate outputs that agents can resolve over time. \\
+Independent portals & University archives, community frontends, wallets, explorers, dashboards, and indexers using the same public protocol facts. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+These applications do not need to share one presentation layer. They share a
+typed protocol substrate. That distinction is central to PaperProof's
+long-term potential: the same artifact can outlive a particular site and remain
+usable by future frontends, indexers, and agents.
 
 \section{SDK and Developer Ecosystem}
 
@@ -375,6 +458,21 @@ page data, protocol prompts, and visible state to explain what users are seeing.
 It can clarify artifact details, voting state, locked funds, publish forms,
 comment behavior, and safety checks.
 
+The prompt layer is itself protocol-native. Official prompts are published as
+\code{generic\_file} artifacts, registered by application and route, and resolved
+through the active prompt registry. A route may follow the latest artifact
+version or pin a specific version. This makes official prompts traceable,
+versioned, auditable, and replaceable without treating the static web bundle as
+the only source of truth.
+
+Copilot memory follows a different boundary. The private memory body belongs in
+MemWal and Walrus, not in PaperProof Move objects. PaperProof stores only
+governed discovery metadata: the wallet, app, memory identifier, provider,
+namespace root, descriptor artifact, version policy, and availability state.
+The official app can therefore check whether a wallet has one active usable
+memory entry for the app, while the user's private preferences and summaries
+remain outside public chain state.
+
 Copilot does not sign transactions. It does not hold private keys. It does not
 replace the wallet. This separation is central to PaperProof's Agentic Web
 position: AI can help users understand and prepare actions, but authorization
@@ -412,7 +510,8 @@ Early governance should focus on limited, high-signal parameters:
   \item action enablement;
   \item operator and authority transitions;
   \item direct authority reduction over time;
-  \item future type activation.
+  \item future type activation;
+  \item official prompt and memory capability availability.
 \end{itemize}
 
 This scope is intentionally conservative. Governance should first protect the
@@ -472,6 +571,8 @@ The seed phase establishes the minimum durable protocol:
   \item official deployment manifest;
   \item TypeScript, Python, and Rust SDKs;
   \item official static web application;
+  \item protocol-native Copilot prompt registry;
+  \item lightweight Copilot memory registry for governed discovery metadata;
   \item yellow paper, academic paper, slides, and developer documentation;
   \item opt-in mainnet integration scripts and examples.
 \end{itemize}
@@ -482,7 +583,7 @@ This phase focuses on making PaperProof pleasant and credible for early users:
 
 \begin{itemize}[leftmargin=*]
   \item polish Explore, Publish, Governance, My Space, Docs, Blog, and Forum;
-  \item strengthen PaperProof Copilot;
+  \item strengthen PaperProof Copilot with native prompts and wallet-linked memory;
   \item improve Walrus upload/read/verify/extend/transfer flows;
   \item improve examples and tutorials;
   \item harden query providers and watch APIs;

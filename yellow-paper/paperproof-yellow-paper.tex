@@ -159,7 +159,9 @@ At minimum, a manifest MUST provide:
   \item network name, for example \code{mainnet} or future \code{testnet};
   \item protocol version label;
   \item package IDs for \code{pprf}, \code{publishing}, \code{comments}, and \code{governance};
-  \item object IDs for \code{PaperProofRoot}, \code{TypeRegistry}, \code{FeeManager}, \code{GovernanceVault}, \code{GovernanceConfig}, and \sui{} \code{Clock};
+  \item package IDs for optional official capability registries, including prompt and memory registries when enabled by an official app build;
+  \item object IDs for the root, type registry, fee manager, governance vault, governance config, and \sui{} \code{Clock};
+  \item object IDs for official shared capability registries where deployed;
   \item coin types for \pprf{}, \code{SUI}, and \code{WAL} where relevant;
   \item an update timestamp and minimum recommended SDK version.
 \end{itemize}
@@ -174,6 +176,7 @@ SDKs and indexers SHOULD fail closed when a manifest does not match chain state.
   \item the governance vault's governance config ID matches the manifest;
   \item the fee manager's registry ID matches the official registry;
   \item the comments trees and likes books accepted by the application are bound to official series objects;
+  \item the prompt registry and memory registry, if used, bind to the same root ID and governance vault ID as the active manifest;
   \item event package IDs match the current package for current-state updates, while package history is used only for migration-aware historical views.
 \end{itemize}
 
@@ -211,6 +214,11 @@ Table~\ref{tab:object-inventory} lists the primary protocol objects. Getter func
 \breakcode{FeeManager} & Official fee configuration. Stores registry ID and fee levels for comments and artifact types. \\
 \breakcode{GovernanceConfig} & Proposal system configuration. Stores total supply, proposer threshold, duration, next proposal ID, pause state, active proposal ID, proposal ID mapping, and enabled actions. \\
 \breakcode{Proposal} & Governance proposal object. Stores proposal type, action type, title, description, payload fields, votes, locked balances, epoch window, status, execution flag, and vote records. \\
+\breakcode{PromptRegistry} & Official route-to-prompt registry for app prompts. Stores root binding, governance vault binding, and prompt registrations keyed by app ID and route ID. Updates require the active governance operator. \\
+\breakcode{PromptRegistration} & Copyable prompt binding record. Stores app ID, route ID, prompt artifact series ID, optional pinned version ID, latest-version policy, schema version, update epoch, and updater. \\
+\breakcode{MemoryRegistry} & Official Copilot memory capability registry. Stores root binding, governance vault binding, provider policies, and active memory entry IDs by wallet owner and app ID. \\
+\breakcode{ProviderPolicy} & Memory provider policy. Stores provider name, enabled flag, accepted schema-version range, update epoch, and updater. \\
+\breakcode{MemoryEntry} & Per-wallet, per-app memory capability object. Stores owner, app ID, memory ID, provider, MemWal account ID, namespace root, descriptor artifact code, descriptor series/version policy, schema version, availability, owner-enabled state, owner-deleted tombstone, and timestamps. \\
 \bottomrule
 \end{longtable}
 
@@ -400,6 +408,12 @@ Comment & 2 & deleted \\
 
 Only open trees accept new comments. A parent comment MUST exist and MUST be active. The root comment has ID 0 and cannot be mutated as an ordinary user comment.
 
+An application MAY use tree status to create non-commentable official surfaces.
+For example, Docs articles can be published as ordinary artifact series while
+their official comments tree is set to \code{locked} or \code{archived}. The
+frontend SHOULD hide comment controls for such surfaces, but the protocol reason
+new comments fail is the tree status check.
+
 \subsection{On-Chain and Blob Comments}
 
 Comment content modes are:
@@ -417,7 +431,10 @@ Comment content modes are:
 \end{tabular}
 \end{table}
 
-Inline comments MUST be non-empty and no larger than the tree's \code{max\_onchain\_comment\_bytes}, whose default is 512 bytes. Blob comments MUST include non-empty blob ID and blob digest and MAY include a content preview. Blob comment limits are:
+Inline comments MUST be non-empty and no larger than the tree's configured
+maximum inline-comment byte limit, whose default is 512 bytes. Blob comments
+MUST include non-empty blob ID and blob digest and MAY include a content
+preview. Blob comment limits are:
 
 \begin{table}[h]
 \centering
@@ -441,6 +458,104 @@ The tree owner may set tree status and comment status. A comment author may dele
 \subsection{Likes}
 
 \code{like\_paper} and \code{unlike\_paper} operate on the official \code{LikesBook}. The caller MUST provide a \pprf{} coin proof whose value is at least \code{MIN\_PPRF\_FOR\_LIKE}. A like is proof of holding, not a burn or stake. The likes book prevents duplicate likes by the same address and emits \code{PaperLikedEvent} or \code{PaperUnlikedEvent}.
+
+\section{Protocol-Native Prompt Registry}
+
+The prompt registry maps official application routes to versioned PaperProof
+prompt artifacts. Prompt bytes are not stored in the registry. They are stored
+as ordinary \code{generic\_file} artifacts whose version records commit to
+Walrus references. The registry only selects which artifact series and version
+policy an official app route should use.
+
+\subsection{Prompt Registration Key}
+
+A prompt registration is keyed by \code{app\_id + ":" + route\_id}. In the
+official app, examples include \code{paperproof-app:copilot/global} and
+\code{paperproof-app:copilot/memory}. The registry stores:
+
+\begin{itemize}[leftmargin=*]
+  \item \code{app\_id} and \code{route\_id};
+  \item \code{series\_id} of the prompt artifact;
+  \item optional \code{pinned\_version\_id};
+  \item \code{use\_latest}, which selects the current version of the series when true;
+  \item \code{schema\_version};
+  \item update epoch and updater address.
+\end{itemize}
+
+\subsection{Prompt Governance Boundary}
+
+\code{create\_registry} and \code{register\_prompt} MUST be called by the active
+operator of the root-bound governance vault. The registry MUST bind to the same
+root ID and governance vault ID expected by the active deployment manifest.
+This is intentionally lighter than proposal-based automatic execution: it gives
+official operators a governed capability boundary without requiring every prompt
+update to be a full token vote.
+
+Clients MUST resolve prompt content in two steps. First, read the official
+prompt registration. Second, read the referenced PaperProof artifact
+series/version through normal artifact rules. If \code{use\_latest} is false,
+\code{pinned\_version\_id} MUST be present. If chain resolution, Walrus fetch, or
+manifest drift checks fail, an app MAY fall back to bundled prompts, but it MUST
+not claim those bundled prompts are the current chain-selected prompt.
+
+\section{Copilot Memory Registry}
+
+The memory registry is a governed discovery and availability layer for
+wallet-linked Copilot memory. It does not store private memory bodies. Memory
+bodies are handled by an external provider such as MemWal, which may in turn use
+Walrus storage. PaperProof stores only metadata needed for official discovery,
+version policy, and availability checks.
+
+\subsection{Provider Policy}
+
+Before a provider is considered usable, the registry MUST contain a
+\code{ProviderPolicy}. A policy records provider name, enabled flag, minimum and
+maximum accepted schema versions, update epoch, and updater. Setting provider
+policy requires the active governance operator.
+
+\subsection{Memory Entry State}
+
+Each \code{MemoryEntry} is a shared object. The official app model is at most
+one active entry per wallet owner and app ID. Deleted entries are tombstoned,
+not physically erased, and the active-entry mapping is released so the owner can
+create a new entry later.
+
+\begin{table}[h]
+\centering
+\caption{Memory entry usability flags.}
+\begin{tabularx}{\textwidth}{p{0.22\textwidth}X}
+\toprule
+\textbf{Field} & \textbf{Meaning} \\
+\midrule
+\code{available} & Operator/governance availability flag. If false, the official Copilot MUST NOT use the entry. \\
+\code{owner\_enabled} & User-controlled enablement flag for the chain entry. \\
+\code{owner\_deleted} & Tombstone flag. Deleted entries are not usable and do not block later registration. \\
+\code{use\_latest} & Version policy for the descriptor artifact. If false, a pinned version ID is required. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+A memory entry is usable only when all of the following hold: it belongs to the
+official registry, \code{available} is true, \code{owner\_enabled} is true,
+\code{owner\_deleted} is false, the provider policy exists, the provider policy
+is enabled, and the entry schema version is within the provider policy range.
+
+\subsection{Memory Operations}
+
+The create-entry function creates a shared entry and records its ID in the
+owner/app active-entry table. The call MUST reject creation if an active entry
+already exists for the same owner and app ID. The update-pointer function lets
+the owner update the provider account pointer and namespace root. The
+disable-entry function lets the owner set \code{owner\_enabled} to false. The
+delete-entry function releases the active-entry mapping, sets
+\code{owner\_enabled} to false, sets \code{owner\_deleted} to true, sets
+\code{available} to false, and records a deletion epoch. It does not delete
+external MemWal or Walrus data.
+
+\code{set\_memory\_availability} and \code{set\_memory\_version\_policy} require
+the active governance operator and the official registry/vault binding. They
+let the official app disable a specific memory capability or change the
+descriptor series/version policy used to explain the memory schema.
 
 \section{Fee Model}
 
@@ -629,6 +744,29 @@ Governance emits:
   \item fee and upgrade events: \breakcode{FeeCollectedEvent}, \breakcode{CommentsFeeLevelChangedEvent}, \breakcode{ArtifactFeeLevelChangedEvent}, \breakcode{ManagedUpgradeCapRegisteredEvent}, \breakcode{ManagedUpgradeAuthorizedEvent}, and \breakcode{ManagedUpgradeCommittedEvent}.
 \end{itemize}
 
+\subsection{Prompt Registry Events}
+
+Prompt registry events are:
+
+\begin{itemize}[leftmargin=*]
+  \item \code{PromptRegistryCreatedEvent}
+  \item \code{PromptRegisteredEvent}
+\end{itemize}
+
+\subsection{Memory Registry Events}
+
+Memory registry events are:
+
+\begin{itemize}[leftmargin=*]
+  \item \code{MemoryRegistryCreatedEvent}
+  \item \code{ProviderPolicySetEvent}
+  \item \code{MemoryEntryCreatedEvent}
+  \item \code{MemoryEntryPointerUpdatedEvent}
+  \item \code{MemoryEntryDeletedEvent}
+  \item \code{MemoryEntryAvailabilitySetEvent}
+  \item \code{MemoryEntryVersionPolicySetEvent}
+\end{itemize}
+
 \section{Canonical Indexing Rules}
 
 Indexers are part of the protocol integration surface. They MUST distinguish accepted events from rejected events.
@@ -643,7 +781,9 @@ An event SHOULD update canonical domain state only if:
   \item for artifact events, the series object belongs to the official publishing path and its artifact type is supported;
   \item for comment events, the tree ID matches the series's official comments tree ID;
   \item for like events, the likes book ID matches the series's official likes book ID;
-  \item for governance events, the proposal belongs to the official governance config and registry.
+  \item for governance events, the proposal belongs to the official governance config and registry;
+  \item for prompt events, the prompt registry ID, root ID, and governance vault ID match the active manifest;
+  \item for memory events, the memory registry ID, root ID, governance vault ID, entry registry ID, and active-entry mapping match the active manifest and object state.
 \end{enumerate}
 
 Events from historical packages MAY be retained in a non-current historical table, but frontends MUST NOT report current state as complete if they only query an old package or omit active package filters.
@@ -662,6 +802,26 @@ Applications MUST distinguish:
 \end{itemize}
 
 Showing ``no votes'', ``no comments'', or ``no artifacts'' when the provider failed is a protocol integration bug.
+
+\subsection{Protocol Facts vs Interface Policy}
+
+An official or third-party interface MAY hide, delist, de-rank, label, refuse
+to preview, or decline to index an artifact, comment, link, or Walrus
+reference. Such interface policy MUST NOT be represented as deletion of
+underlying protocol facts. Sui records, third-party indexer records, and
+decentralized-storage content may remain retrievable even when one interface
+does not display them.
+
+Likewise, a visible artifact MUST NOT be interpreted as endorsed, reviewed, or
+certified by the interface operator. PaperProof establishes typed commitments
+and official object relationships. It does not establish content truth, legal
+compliance, academic merit, safety, or social approval.
+
+Independent applications, indexers, wallets, dashboards, agents, and direct
+chain clients MAY reconstruct protocol views from official objects and
+canonical events. They MAY apply their own display and moderation policies, but
+they SHOULD clearly distinguish those application-layer choices from
+contract-level status and storage availability.
 
 \section{Validation Rules}
 
@@ -709,10 +869,27 @@ SDKs are not protocol truth, but they SHOULD encode the following rules:
   \item validate Sui addresses, object IDs, package IDs, artifact types, content fields, metadata attributes, and string lengths before building transactions;
   \item expose build-only, dry-run, dev-inspect, sign-and-execute, and typed-result helpers where the underlying platform supports them;
   \item return typed IDs extracted from transaction results, including series ID, version ID, comments tree ID, likes book ID, comment ID, proposal ID, and digest;
+  \item expose prompt registry builders and prompt resolution helpers that support latest and pinned version policies;
+  \item expose memory registry builders for creating, deleting, disabling, and governing memory entries without treating private memory bodies as chain data;
   \item expose query providers and watch APIs that apply canonical filters;
   \item preserve cause chains in errors and avoid treating provider failure as empty protocol state;
   \item expose Walrus content helper functions for publish, read, verify, extend, and owned-blob transfer while preserving Walrus ownership and shared-blob semantics.
 \end{itemize}
+
+For static frontend deployments, browser access to third-party model endpoints,
+Walrus gateways, and memory relayers depends on ordinary web network policy such
+as CORS. This is not a Move protocol rule. A local development server may proxy
+MemWal relayer calls for demos, while a production static site requires a
+browser-compatible relayer or accepts graceful degradation of memory save/recall
+without breaking ordinary artifact, prompt, and governance reads.
+
+SDKs SHOULD also support transaction composition where it preserves contract
+semantics. Compatible Move calls MAY be grouped into a Sui Programmable
+Transaction Block so a user signs one coherent artifact action. Integrators
+MUST still respect storage-provider phase boundaries: for example, Walrus
+reserve and certify operations may require distinct stages even when later
+certification, publication, add-version, or registry-update calls can be
+composed.
 
 \section{Upgrade and Compatibility}
 
@@ -730,7 +907,10 @@ PaperProof security depends on explicit object binding. The following rules are 
   \item Comments and likes are official only through the series-bound tree and book.
   \item Governance events are official only through the active governance config and vault.
   \item Fee settings are official only through the root-bound fee manager.
+  \item Prompt registrations are official only through the manifest-bound prompt registry and referenced PaperProof artifact series.
+  \item Memory entries are official only through the manifest-bound memory registry and usable only when provider, availability, owner, and deletion checks pass.
   \item Large content remains outside Move; on-chain records commit to references and hashes, not to bytes.
+  \item Private Copilot memory bodies are not stored in PaperProof Move objects.
   \item PPRF likes and votes are participation signals; they do not prove merit or truth.
   \item AI agents and frontends may explain and prepare transactions, but wallets or signers remain the authority boundary.
 \end{itemize}
@@ -758,11 +938,15 @@ The current mainnet manifest records:
 \code{publishing package} & \breakcode{0xe67a6956f37c3182354189d9b77ca14058694aad82522da0c6cb91cfddee4782} \\
 \code{comments package} & \breakcode{0xaef346fc40bf20af62f4bbbc1608ba2272e80e4ba3d716634026baa589e9aeba} \\
 \code{governance package} & \breakcode{0xc1ced3b8ae5281eeeb8cdb5527978e294c54f14a7fd8d65e7e9502d4ffffb87e} \\
+\code{prompt registry package} & \breakcode{0x10b9c6e90a896dc3244d047e32724d80de0dc697b5ea12c5fdd8925131ed4c59} \\
+\code{memory registry package} & \breakcode{0xbe9527ee927c4a6dcb91d5503758cd731d311813cd70d93914f2bf58a36db3d1} \\
 \code{root} & \breakcode{0x7dc6c78b276825499a2204b060394e80b81196eb1f77d2036b503a2cca15dd78} \\
 \code{typeRegistry} & \breakcode{0x966ffa24d0a96b34267b62c628f39c830afc9de25438b6502835fa8a3815d6b5} \\
 \code{feeManager} & \breakcode{0x7bb8360ea1fa50f923628c929b8726b00eb8968c6a678acde71f97ae146e9249} \\
 \code{governanceVault} & \breakcode{0x0df35aa53ef37f8ca8f6a6280d743effa6e0bfc613c5c6c0a78318ad4a38f875} \\
 \code{governanceConfig} & \breakcode{0x7ed018db6b2cd7c32692a1c33543fb90d9c36add1226f93cbeb2a8fb10955dfa} \\
+\code{promptRegistry} & \breakcode{0x14ec45eb83bb1b0eb22c7e885c7c71ea05b1e22dd05e3e1107dcef528600b0da} \\
+\code{memoryRegistry} & \breakcode{0x9a5beeb6610b33c06771c4152c039314784437e802e200afd2ce80fb88bdf9e2} \\
 \code{clock} & \breakcode{0x6} \\
 \code{PPRF coin type} & \breakcode{0x5d2ec9829a9e116de7c2008281a90b96690beb2252af120ad05a25fe13fae0da::pprf::PPRF} \\
 \bottomrule
@@ -865,6 +1049,54 @@ The current mainnet manifest records:
 \code{E\_INVALID\_TREE\_FACTORY\_CAP} & 24 \\
 \code{E\_ROOT\_COMMENT\_IMMUTABLE} & 25 \\
 \code{E\_DELETED\_COMMENT\_FINAL} & 26 \\
+\bottomrule
+\end{longtable}
+
+\subsection{Prompt Registry Abort Codes}
+
+\begin{longtable}{lr}
+\toprule
+\textbf{Name} & \textbf{Code} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Name} & \textbf{Code} \\
+\midrule
+\endhead
+\code{E\_INVALID\_GOVERNANCE} & 1 \\
+\code{E\_EMPTY\_APP\_ID} & 2 \\
+\code{E\_EMPTY\_ROUTE\_ID} & 3 \\
+\code{E\_INVALID\_VERSION\_POLICY} & 4 \\
+\code{E\_PROMPT\_NOT\_FOUND} & 5 \\
+\code{E\_ZERO\_ROOT} & 6 \\
+\code{E\_TEXT\_TOO\_LONG} & 7 \\
+\bottomrule
+\end{longtable}
+
+\subsection{Memory Registry Abort Codes}
+
+\begin{longtable}{lr}
+\toprule
+\textbf{Name} & \textbf{Code} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Name} & \textbf{Code} \\
+\midrule
+\endhead
+\code{E\_INVALID\_GOVERNANCE} & 1 \\
+\code{E\_EMPTY\_APP\_ID} & 2 \\
+\code{E\_EMPTY\_PROVIDER} & 3 \\
+\code{E\_EMPTY\_NAMESPACE\_ROOT} & 4 \\
+\code{E\_TEXT\_TOO\_LONG} & 5 \\
+\code{E\_ZERO\_ACCOUNT} & 6 \\
+\code{E\_EMPTY\_MEMORY\_ID} & 7 \\
+\code{E\_EMPTY\_ARTIFACT\_CODE} & 8 \\
+\code{E\_INVALID\_VERSION\_POLICY} & 9 \\
+\code{E\_NOT\_OWNER} & 10 \\
+\code{E\_ZERO\_SERIES} & 11 \\
+\code{E\_PROVIDER\_NOT\_FOUND} & 12 \\
+\code{E\_ACTIVE\_ENTRY\_EXISTS} & 13 \\
 \bottomrule
 \end{longtable}
 

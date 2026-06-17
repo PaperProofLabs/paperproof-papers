@@ -44,9 +44,9 @@
 \begin{abstract}
 Important digital works increasingly live across unstable boundaries: storage links, social feeds, repository releases, preprint pages, chat archives, and application databases. These surfaces are useful, but none of them alone provides a neutral and composable protocol identity for the work itself. PaperProof is a Sui-native protocol for durable, verifiable, and community-governed artifacts backed by Walrus content storage. It treats a work not as a single uploaded file, but as a continuing artifact series with typed versions, content commitments, official interaction objects, governance-aware parameters, and canonical events that can be consumed by applications, SDKs, indexers, and agentic interfaces.
 
-This paper presents PaperProof as artifact infrastructure rather than as a narrow publishing website. The protocol separates compact state from large content: Sui stores artifact identity, type state, version records, comments, likes, governance, fee configuration, and events, while Walrus stores large content such as PDFs, datasets, source archives, software packages, images, and long-form text. The first official application is a static web app intended for low-maintenance deployment through Walrus Sites. Developer access is provided through role-specific TypeScript, Python, and Rust SDKs for frontend integration, scripting and analytics, and high-performance indexing.
+This paper presents PaperProof as artifact infrastructure rather than as a narrow publishing website. The protocol separates compact state from large content: Sui stores artifact identity, type state, version records, comments, likes, governance, fee configuration, prompt and memory capability registries, and events, while Walrus stores large content such as PDFs, datasets, source archives, software packages, images, long-form text, and prompt packages. The first official application is a static web app intended for low-maintenance deployment through Walrus Sites. Developer access is provided through role-specific TypeScript, Python, and Rust SDKs for frontend integration, scripting and analytics, and high-performance indexing.
 
-We describe the protocol model, on-chain object architecture, content binding, query and watch semantics, governance path, SDK ecosystem, and a browser-side agentic interface called PaperProof Copilot. The design goal is not to replace academic archives, social platforms, repositories, or storage networks. Instead, PaperProof supplies a durable layer beneath and beside them: a verifiable identity and event surface for artifacts that should remain interpretable across frontends, market cycles, and organizational changes.
+We describe the protocol model, on-chain object architecture, content binding, query and watch semantics, governance path, SDK ecosystem, and a browser-side agentic interface called PaperProof Copilot. Copilot uses protocol-native prompts stored as PaperProof artifacts and an optional wallet-linked memory layer whose public registry records only discovery and availability metadata while private memory remains outside PaperProof chain state. The design goal is not to replace academic archives, social platforms, repositories, or storage networks. Instead, PaperProof supplies a durable layer beneath and beside them: a verifiable identity and event surface for artifacts that should remain interpretable across frontends, market cycles, and organizational changes.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -70,7 +70,7 @@ PaperProof addresses this missing layer. It defines a Sui-native artifact protoc
 
 The current implementation trajectory is deliberately product-oriented. PaperProof includes mainnet contracts, a static official web application, deployment manifests, SDKs in TypeScript, Python, and Rust, optional mainnet integration harnesses, and a browser-side Copilot that explains protocol state while preserving wallet approval boundaries. These components are not peripheral. They are part of the argument: a protocol for long-lived artifacts must be usable by ordinary applications and robust enough for indexers and automation.
 
-This paper makes four contributions. First, it proposes an artifact-series model for durable works that can evolve through typed versions. Second, it describes a Sui/Walrus architecture that separates protocol state from large content without reducing artifacts to bare storage links. Third, it presents an SDK and indexer surface that treats events, deployment manifests, and query providers as first-class protocol integration concerns. Fourth, it introduces a human-approved agentic interface pattern in which AI can interpret artifact state and guide workflows without controlling keys or signing transactions.
+This paper makes four contributions. First, it proposes an artifact-series model for durable works that can evolve through typed versions. Second, it describes a Sui/Walrus architecture that separates protocol state from large content without reducing artifacts to bare storage links. Third, it presents an SDK and indexer surface that treats events, deployment manifests, and query providers as first-class protocol integration concerns. Fourth, it introduces a human-approved agentic interface pattern in which AI can interpret artifact state, retrieve protocol-native prompts, and use optional wallet-linked memory without controlling keys or signing transactions.
 
 \subsection{Problem Statement}
 
@@ -105,6 +105,12 @@ Blockchains do not remove all trust, but they change where trust is placed. Prio
 Sui and Walrus create a practical opening for this design. Sui's object model and the Move resource model make it natural to represent protocol objects directly rather than simulating object relationships through account-keyed maps \cite{mysten2022sui,welc2023sui_move,blackshear2020move,sui_docs}. Walrus provides a storage layer for large content and a deployment target for static applications \cite{danezis2025walrus,walrus_docs}. The result is a stack in which a protocol can be public and object-oriented without forcing every artifact byte on chain or every application through one hosted backend.
 
 PaperProof therefore starts from a product-level observation: if Sui transactions are cheap enough and Walrus content operations are usable enough, then artifact interactions can be normal actions rather than rare ceremonial registrations. Publishing, adding versions, commenting, liking, voting, claiming, and maintaining content can become part of a living protocol workflow.
+
+\subsection{The Missing-Layer Hypothesis}
+
+Sui supplies programmable objects and Walrus supplies durable content, but neither layer alone defines the public life of a knowledge artifact. A stored blob does not specify its continuing identity, typed lineage, official interactions, governed agent prompt, or canonical event surface. An application database can add these features, but then the application becomes the authority. PaperProof tests a missing-layer hypothesis: artifact identity and agent-readable context should be protocol infrastructure that multiple applications can reconstruct independently.
+
+This hypothesis shifts the evaluation question. The relevant question is not whether bytes can be uploaded to decentralized storage. It is whether stored content can become a verifiable, versioned, discussable, indexable, and agent-readable object without forcing every future client to trust one hosted service.
 
 \section{Design Goals and Non-Goals}
 
@@ -163,6 +169,8 @@ The fourth principle is layered authority. Sui objects define official state. Wa
 
 The fifth principle is wallet-bounded automation. Builders, services, and agents can reduce user burden, but transaction approval remains at the wallet or signer boundary. This is especially important when AI assistance is present. The system should make the next action understandable without silently taking authority from the user.
 
+The sixth principle is workflow composition. Sui Programmable Transaction Blocks (PTBs) can group compatible Move calls into one user-signable action. PaperProof can use PTBs to reduce signature burden for publication, versioning, comments, registry updates, and related flows while still respecting external storage phases such as Walrus reserve and certify operations. This matters because a technically composable protocol can still fail at the product layer if users must approve a confusing sequence of low-level calls.
+
 \section{Layered Architecture}
 
 PaperProof consists of six cooperating layers: content, protocol state, events, query/indexing, applications, and agentic assistance. Fig.~\ref{fig:architecture} summarizes the intended formal release architecture.
@@ -197,6 +205,8 @@ The query layer is intentionally provider-based. Sui's JSON-RPC sunset path make
 The first official application is a static PaperProof web app rather than a server-owned platform. Its pages map directly to protocol concepts. Explore presents recent artifacts by type and opens detailed artifact pages. Publish guides users through type-specific publication. Governance exposes active proposals, voting history, and claimable funds. My Space shows wallet state, personal artifacts, and voting records. Docs, Blog, and Forum are application surfaces that can themselves be backed by protocol artifacts rather than by a private content database.
 
 This application is official, but it is not exclusive. A university archive, a research-group portal, a software release dashboard, a mobile app, a community forum, or an autonomous indexing service can all use the same protocol objects. PaperProof's goal is therefore not to trap users inside one frontend. It is to make the protocol facts sufficiently typed and discoverable that multiple frontends can coexist.
+
+The application layer may also make policy choices that are intentionally not global protocol mutations. An official frontend may hide, de-rank, label, or refuse to preview content because of abuse, legal risk, provider failure, or product policy. Such non-display does not erase Sui records or decentralized-storage content. This separation is a practical consequence of combining durable infrastructure with independently operated presentation layers.
 
 \section{Why Sui and Walrus Are Structural}
 
@@ -446,11 +456,47 @@ PaperProof Copilot is a browser-side protocol guide, not an autonomous wallet. I
 
 The safety boundary is explicit. Copilot cannot sign, cannot approve, cannot access seed phrases, and should not ask users for private keys. It prepares understanding; the wallet controls authorization. This pattern is important for Agentic Web systems: AI can become more useful when it reads structured Sui objects and Walrus-backed content, but authority should remain with object permissions and human-approved signatures.
 
+\begin{figure}[!t]
+    \centering
+    \includegraphics[width=\columnwidth]{agentic-memory-architecture.pdf}
+    \caption{Agentic interface architecture. Public registries select official prompt artifacts and memory capability metadata; private memory bodies remain in MemWal/Walrus and are accessed only through user-authorized client flows.}
+    \label{fig:agentic_memory}
+\end{figure}
+
 \subsection{Agent-Readable State}
 
 PaperProof is useful to agents because it does not present artifacts only as unstructured pages. Artifact type, version lineage, content references, proposal state, voting records, comment trees, and manifest metadata are structured. A model can summarize the current page, explain the meaning of a proposal, compare versions, warn that a provider failed, or describe why a claim is not yet available.
 
 The important design point is that the agent reads protocol state through the same typed surfaces as the application. It is not given hidden authority. This makes the agent a guide over public and wallet-visible facts rather than a privileged backend.
+
+\subsection{Protocol-Native Prompts}
+
+Copilot prompts are treated as artifacts rather than as invisible application constants. The official prompt registry maps an application route to a PaperProof artifact series and either a latest-version or pinned-version policy. The referenced prompt package is stored through the same artifact and Walrus path as other durable content. This makes the prompt layer auditable and replaceable without requiring every static-website deployment to be the final authority on agent behavior.
+
+This design is intentionally modest. The registry does not evaluate prompt quality, does not make model-output guarantees, and does not give the agent additional permissions. It supplies a verifiable coordinate for the instructions an official application intends to use.
+
+\subsection{Wallet-Linked Memory}
+
+Persistent agent memory creates a different trust problem from public artifact prompts. A user's language preference, answer style, current tasks, or recent focus topics can be useful to a Copilot, but these records should not be published directly into public chain state. PaperProof therefore separates memory capability metadata from memory body content. The memory registry records owner, app, provider, namespace, descriptor artifact, version policy, availability, user-enabled state, and deletion tombstone. The private memory body remains in MemWal and Walrus.
+
+\begin{table}[!t]
+\caption{Agentic state separation in PaperProof.}
+\label{tab:agentic_state}
+\centering
+\begin{tabularx}{\columnwidth}{p{0.28\columnwidth}X}
+\toprule
+\textbf{Layer} & \textbf{Role} \\
+\midrule
+Prompt artifact & Public, versioned instruction package for an app route. \\
+Prompt registry & Governed route-to-series/version selector. \\
+Memory registry & Public capability metadata and availability state. \\
+MemWal memory & Private user memory body and recall/save operations. \\
+Wallet & Authorization boundary for chain actions and local access setup. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The registry model also supports management without heavy governance over every memory update. A user may create, disable, or delete their own official memory entry. An operator bound through the governance vault may mark a memory capability unavailable or adjust the descriptor version policy. Deletion is a chain-level tombstone and active-entry release; it does not imply erasure of external Walrus or MemWal blobs.
 
 \subsection{Human-Approved Workflows}
 
@@ -462,6 +508,7 @@ The intended formal release state of PaperProof includes:
 
 \begin{itemize}
     \item Sui mainnet contracts for artifact publishing, comments, likes, governance, fees, and deployment manifests.
+    \item Protocol-native prompt and memory registries bound to the governance vault for official Copilot capabilities.
     \item Walrus-backed content flows and a static official application deployable through Walrus Sites.
     \item A TypeScript SDK published to npm for browser and Node.js integration.
     \item A Python SDK published to PyPI for scripting, analytics, export, and notebooks.
@@ -498,7 +545,7 @@ PaperProof should be evaluated as a deployed artifact infrastructure system. The
 
 \subsection{Functional Coverage}
 
-The implemented system supports publishing, adding versions, comments, blob-backed comments, likes and unlikes, governance proposals, voting, claims, content read/write/verify/extend/transfer, deployment verification, event parsing, query helpers, and watch APIs. Tests include unit validation, fuzzy validation, builder tests, event parsing, provider behavior, examples, optional mainnet scripts, and indexer behavior.
+The implemented system supports publishing, adding versions, comments, blob-backed comments, likes and unlikes, governance proposals, voting, claims, protocol-native prompt resolution, memory capability registration, content read/write/verify/extend/transfer, deployment verification, event parsing, query helpers, and watch APIs. Tests include unit validation, fuzzy validation, builder tests, event parsing, provider behavior, examples, optional mainnet scripts, and indexer behavior.
 
 Functional coverage should be judged at the workflow level rather than only by counting Move functions. A user-facing publish flow requires content preparation, validation, content storage, transaction construction, wallet signing, execution result parsing, series ID extraction, event verification, and query readback. A governance vote requires coin selection, amount normalization, proposal state reading, transaction execution, locked-fund tracking, and later claim support. PaperProof's SDKs are designed to cover these whole workflows.
 
@@ -506,7 +553,7 @@ Functional coverage should be judged at the workflow level rather than only by c
 
 Mainnet integration tests and examples exercise real Sui and Walrus paths when explicitly enabled. These tests are intentionally opt-in because they may spend gas or move assets. The project also distinguishes read-only verification from write-heavy tests so CI remains safe.
 
-The most valuable integration evidence is not a single successful transaction. It is repeated coverage across independent flows: artifact creation, version addition, comments, blob comments, like/unlike, proposal creation, voting, finalization, claim, content write/read/verify/extend/transfer, query pagination, and indexer backfill. This variety helps reveal argument ordering mistakes, object ownership assumptions, provider page limits, event parsing errors, and result-normalization gaps.
+The most valuable integration evidence is not a single successful transaction. It is repeated coverage across independent flows: artifact creation, version addition, comments, blob comments, like/unlike, proposal creation, voting, finalization, claim, prompt registration and resolution, memory create/update/delete, content write/read/verify/extend/transfer, query pagination, and indexer backfill. This variety helps reveal argument ordering mistakes, object ownership assumptions, provider page limits, event parsing errors, and result-normalization gaps.
 
 \subsection{Failure-Mode Evaluation}
 
@@ -528,7 +575,7 @@ For users, the success criterion is simpler: within minutes they should understa
 
 PaperProof is not designed to put large content on chain. The expected cost profile is many small Sui transactions for state and interaction, plus Walrus storage operations for content. This matches the artifact lifecycle: publishing and versioning are relatively infrequent, while comments, likes, queries, and governance views may be more frequent. The system benefits from Sui's low transaction cost and parallel object execution, while indexers benefit from checkpoint-based ingestion and database sinks.
 
-Future empirical evaluation should report transaction costs for representative publish, add-version, comment, like, vote, claim, and content-maintenance flows; storage cost for representative content sizes; indexer backfill throughput; checkpoint lag under tail mode; and frontend query latency under provider failures. These measurements are intentionally separated because a durable artifact protocol should not optimize only one path at the expense of usability or recoverability.
+Future empirical evaluation should report transaction costs for representative publish, add-version, comment, like, vote, claim, prompt registration, memory registration, and content-maintenance flows; storage cost for representative content sizes; indexer backfill throughput; checkpoint lag under tail mode; and frontend query latency under provider failures. These measurements are intentionally separated because a durable artifact protocol should not optimize only one path at the expense of usability or recoverability.
 
 \subsection{Indexing Evaluation}
 
@@ -546,7 +593,15 @@ Governance introduces token concentration and participation risks. A vote is a p
 
 Indexers can still make mistakes if they ignore official object bindings or trust incomplete event providers. This is why deployment manifests, canonical filters, and provider safeguards are part of the SDK design.
 
-The Copilot layer must remain careful. It should explain and guide, not overstate certainty or pressure users into signing. The protocol benefits from agent-readable structure only if human authorization remains clear.
+The Copilot layer must remain careful. It should explain and guide, not overstate certainty or pressure users into signing. Protocol-native prompts improve auditability but do not eliminate model error. Wallet-linked memory improves continuity but creates privacy and dependency risks if relayers, browsers, or memory providers are misconfigured. The protocol benefits from agent-readable structure only if human authorization and memory boundaries remain clear.
+
+The current memory boundary should not be overstated as complete confidentiality
+infrastructure. Keeping memory bodies outside PaperProof Move objects reduces
+public exposure, but provider, browser, relay, and storage policy still matter.
+A future direction is selective-access protection through a privacy layer such
+as Seal. Such integration could strengthen encrypted memory sharing or
+cross-agent access control, but it is not required to interpret the current
+registry semantics.
 
 \subsection{Protocol Scope Limits}
 
@@ -597,6 +652,11 @@ The main distinction is that PaperProof combines storage references, object-boun
 PaperProof argues that important digital works need more than storage links and application pages. They need durable protocol identities, typed version histories, verifiable content commitments, official interaction objects, governance-aware parameters, and event streams that can be consumed by systems not present at publication time.
 
 By combining Sui object state with Walrus content storage, PaperProof makes artifacts durable without pretending that every social or editorial judgment belongs on-chain. By shipping role-specific SDKs and indexer tools, it treats developer experience as part of protocol design. By introducing a human-approved Copilot interface, it shows how agentic workflows can interpret Sui-native artifact state without controlling user authority.
+
+More broadly, PaperProof treats artifacts, prompts, memory descriptors, reports,
+datasets, logs, and software releases as points on the same design spectrum:
+durable knowledge objects whose public commitments can be resolved across
+applications and over time. This is the main systems claim of the project.
 
 The result is not a replacement for archives, repositories, social platforms, or storage networks. It is a protocol layer beneath and beside them: a durable coordinate system for artifacts that should remain verifiable, discussable, governable, and readable by future applications.
 
