@@ -37,14 +37,16 @@
 \title{PaperProof: Sui-Native Artifact Infrastructure for Durable, Verifiable, and Agent-Readable Knowledge Objects}
 
 \author{\IEEEauthorblockN{PaperProof Labs}\\
-\IEEEauthorblockA{paperproof.labs@gmail.com}}
+\IEEEauthorblockA{\href{mailto:paperproof.labs@gmail.com}{paperproof.labs@gmail.com}\\
+\href{https://paperproof.site/}{https://paperproof.site/}\\
+\href{https://github.com/PaperProofLabs}{https://github.com/PaperProofLabs}}}
 
 \maketitle
 
 \begin{abstract}
 Important digital works increasingly live across unstable boundaries: storage links, social feeds, repository releases, preprint pages, chat archives, and application databases. These surfaces are useful, but none of them alone provides a neutral and composable protocol identity for the work itself. PaperProof is a Sui-native protocol for durable, verifiable, and community-governed artifacts backed by Walrus content storage. It treats a work not as a single uploaded file, but as a continuing artifact series with typed versions, content commitments, official interaction objects, governance-aware parameters, and canonical events that can be consumed by applications, SDKs, indexers, and agentic interfaces.
 
-This paper presents PaperProof as artifact infrastructure rather than as a narrow publishing website. The protocol separates compact state from large content: Sui stores artifact identity, type state, version records, comments, likes, governance, fee configuration, prompt and memory capability registries, and events, while Walrus stores large content such as PDFs, datasets, source archives, software packages, images, long-form text, and prompt packages. The first official application is a static web app intended for low-maintenance deployment through Walrus Sites. Developer access is provided through role-specific TypeScript, Python, and Rust SDKs for frontend integration, scripting and analytics, and high-performance indexing.
+This paper presents PaperProof as artifact infrastructure rather than as a narrow publishing website. The protocol separates compact state from large content: Sui stores artifact identity, type state, version records, comments, likes, governance, fee configuration, prompt and memory capability registries, and events, while Walrus stores large content such as PDFs, datasets, source archives, software packages, images, long-form text, and prompt packages. The first official application remains a static wallet-bounded web app, while a reference indexer now supplies server-assisted views and verified public-content caches for faster reads. Developer access is provided through role-specific TypeScript, Python, and Rust SDKs for frontend integration, scripting and analytics, and high-performance indexing.
 
 We describe the protocol model, on-chain object architecture, content binding, query and watch semantics, governance path, SDK ecosystem, and a browser-side agentic interface called PaperProof Copilot. Copilot uses protocol-native prompts stored as PaperProof artifacts and an optional wallet-linked memory layer whose public registry records only discovery and availability metadata while private memory remains outside PaperProof chain state. The design goal is not to replace academic archives, social platforms, repositories, or storage networks. Instead, PaperProof supplies a durable layer beneath and beside them: a verifiable identity and event surface for artifacts that should remain interpretable across frontends, market cycles, and organizational changes.
 \end{abstract}
@@ -203,6 +205,13 @@ The query layer is intentionally provider-based. Sui's JSON-RPC sunset path make
 \subsection{Application Layer}
 
 The first official application is a static PaperProof web app rather than a server-owned platform. Its pages map directly to protocol concepts. Explore presents recent artifacts by type and opens detailed artifact pages. Publish guides users through type-specific publication. Governance exposes active proposals, voting history, and claimable funds. My Space shows wallet state, personal artifacts, and voting records. Docs, Blog, and Forum are application surfaces that can themselves be backed by protocol artifacts rather than by a private content database.
+
+\begin{figure}[!t]
+    \centering
+    \includegraphics[width=\columnwidth]{official-preprint-detail.png}
+    \caption{An official preprint detail view. The page is an application rendering of protocol facts: artifact code, series and version IDs, content hash, Walrus references, authorship metadata, and version history.}
+    \label{fig:official_preprint_detail}
+\end{figure}
 
 This application is official, but it is not exclusive. A university archive, a research-group portal, a software release dashboard, a mobile app, a community forum, or an autonomous indexing service can all use the same protocol objects. PaperProof's goal is therefore not to trap users inside one frontend. It is to make the protocol facts sufficiently typed and discoverable that multiple frontends can coexist.
 
@@ -427,6 +436,24 @@ The Rust SDK's database sink examples are intended to make this boring in the be
 
 Raw events are not the final indexer product. A domain reducer turns accepted events and object reads into application views: recent artifacts by type, artifact detail views, comment trees, like state, proposal lists, voting records, claimable funds, and deployment drift status. Reducers are intentionally outside the Move contract. This keeps on-chain state compact while still allowing rich derived views for applications.
 
+The reference indexer now exercises this separation in the official application.
+It exposes Explore summary, type-scoped item lists, search, lookup, and official
+content endpoints while preserving compatibility routes for earlier consumers.
+For official Docs, Blog, and Forum content, the indexer can prewarm verified
+public content from official manifests, Sui version objects, and Walrus blobs,
+then refresh the cache after tailing relevant events. These server-assisted
+views are deliberately derived: they improve latency and mobile usability, but
+they do not replace the Sui/Walrus facts from which they are built.
+
+The reference API also makes indexer behavior observable. Health endpoints,
+JSON metrics, Prometheus metrics, processed/rejected event counters,
+checkpoint-lag reporting, search, artifact detail, activity, governance, My
+Space, analytics, and deterministic snapshot endpoints let applications depend
+on a service without confusing that service with protocol authority. This is a
+deliberate split: the API can be replaced by another SQLite/Postgres service,
+search engine, or institutional indexer as long as canonical acceptance and
+manifest drift checks remain intact.
+
 \section{Trust and Threat Model}
 
 PaperProof's trust model begins with the official deployment manifest and the on-chain root object. A frontend, SDK, or indexer should verify that the package ID, root ID, registry ID, governance vault ID, fee manager ID, and relevant shared objects match the declared deployment. Raw Move type strings and event names are insufficient because another package can emit similarly shaped events.
@@ -453,6 +480,13 @@ Executable actions may change fee parameters, type enablement, role configuratio
 \section{Agentic Interface}
 
 PaperProof Copilot is a browser-side protocol guide, not an autonomous wallet. It combines a global protocol prompt, page-specific prompt, dynamic page data, recent conversation history, and the user's current question. It can explain an artifact, summarize a governance page, warn about missing balances, clarify whether funds are still locked, and help the user understand what a wallet transaction is likely to do.
+
+\begin{figure}[!t]
+    \centering
+    \includegraphics[width=\columnwidth]{copilot-open.png}
+    \caption{PaperProof Copilot operates as a browser-side protocol guide. It can read page state and protocol-native prompts, but it remains outside the wallet authorization boundary.}
+    \label{fig:copilot_open}
+\end{figure}
 
 The safety boundary is explicit. Copilot cannot sign, cannot approve, cannot access seed phrases, and should not ask users for private keys. It prepares understanding; the wallet controls authorization. This pattern is important for Agentic Web systems: AI can become more useful when it reads structured Sui objects and Walrus-backed content, but authority should remain with object permissions and human-approved signatures.
 
@@ -514,6 +548,9 @@ The intended formal release state of PaperProof includes:
     \item A Python SDK published to PyPI for scripting, analytics, export, and notebooks.
     \item A Rust SDK published to crates.io for indexers and backend services.
     \item Optional mainnet read/write scripts, fuzzy tests, examples, and deployment drift checks.
+    \item A Sui Prover formal-verification baseline for the four core
+    project-side logic modules: publishing, comments, governance, and
+    governance voting.
     \item A submission/documentation hub that links contracts, SDKs, application code, slides, deployment evidence, and papers.
 \end{itemize}
 
@@ -539,6 +576,15 @@ PaperProof's testing strategy has three layers. Unit and builder tests validate 
 
 Mainnet write tests are useful but must be opt-in. They spend gas, may lock governance funds, may move owned blobs, and may create permanent public artifacts. The project therefore separates local tests, read-only network tests, and write-heavy mainnet scripts. This separation allows CI to remain safe while still giving maintainers a way to validate the full protocol path before releases.
 
+Formal verification is used as complementary evidence rather than as a claim
+that every integration path is proven. The current proof baseline covers the
+four core project-side logic modules and documents remaining limitations that
+come from prover scope, framework modeling, and off-chain integration. This is
+appropriate for PaperProof's architecture: Move specifications can strengthen
+object and state-transition invariants, while SDK tests, indexer replay, and
+mainnet read/write harnesses still carry the cross-system burden involving
+providers, wallets, Walrus gateways, caches, and browsers.
+
 \section{Evaluation}
 
 PaperProof should be evaluated as a deployed artifact infrastructure system. The relevant questions are not only throughput or gas cost, but whether the system realizes its trust boundaries and developer surfaces.
@@ -554,6 +600,20 @@ Functional coverage should be judged at the workflow level rather than only by c
 Mainnet integration tests and examples exercise real Sui and Walrus paths when explicitly enabled. These tests are intentionally opt-in because they may spend gas or move assets. The project also distinguishes read-only verification from write-heavy tests so CI remains safe.
 
 The most valuable integration evidence is not a single successful transaction. It is repeated coverage across independent flows: artifact creation, version addition, comments, blob comments, like/unlike, proposal creation, voting, finalization, claim, prompt registration and resolution, memory create/update/delete, content write/read/verify/extend/transfer, query pagination, and indexer backfill. This variety helps reveal argument ordering mistakes, object ownership assumptions, provider page limits, event parsing errors, and result-normalization gaps.
+
+The project also uses PaperProof to publish artifacts that demonstrate the
+protocol itself. A Sui Overflow historical winner dataset is published as a
+Dataset artifact, and the PaperProof Skill package is published as a Software
+Release artifact. These are not synthetic examples: they exercise Walrus
+packaging, content hashes, typed metadata, artifact codes, version records,
+lookup APIs, and official application rendering.
+
+\begin{figure}[!t]
+    \centering
+    \includegraphics[width=\columnwidth]{dataset-detail.png}
+    \caption{A PaperProof Dataset artifact containing Sui Overflow historical winner data. The artifact demonstrates structured dataset publication and lookup through the same protocol path used by papers and software releases.}
+    \label{fig:dataset_detail}
+\end{figure}
 
 \subsection{Failure-Mode Evaluation}
 

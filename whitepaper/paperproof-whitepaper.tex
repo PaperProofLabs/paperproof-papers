@@ -9,6 +9,7 @@
 \usepackage{booktabs}
 \usepackage{longtable}
 \usepackage{tabularx}
+\usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{enumitem}
@@ -34,10 +35,15 @@
 \newcommand{\walrus}{\textsc{Walrus}}
 \newcommand{\pprf}{\code{PPRF}}
 
+\graphicspath{{./figs/}}
+
 \title{\textbf{PaperProof Whitepaper}\\
 \large A Protocol for Durable Digital Artifacts on Sui and Walrus}
-\author{PaperProof Labs\\\href{mailto:paperproof.labs@gmail.com}{paperproof.labs@gmail.com}}
-\date{Draft v0.1 \\ May 2026}
+\author{PaperProof Labs\\
+\href{mailto:paperproof.labs@gmail.com}{paperproof.labs@gmail.com}\\
+\href{https://paperproof.site/}{https://paperproof.site/}\\
+\href{https://github.com/PaperProofLabs}{https://github.com/PaperProofLabs}}
+\date{Draft v0.2 \\ June 2026}
 
 \begin{document}
 \maketitle
@@ -178,7 +184,7 @@ Docs, Blog, Forum, and PaperProof Copilot. Other people should be able to build
 their own portals, dashboards, indexers, notebooks, mobile apps, institutional
 archives, community forums, and agentic workflows using the same protocol facts.
 
-\begin{figure}[h]
+\begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[
   node distance=9mm,
@@ -246,7 +252,7 @@ versions under one series rather than unrelated uploads.
 
 The six initial artifact types are:
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Initial PaperProof artifact types.}
 \begin{tabularx}{\textwidth}{p{0.25\textwidth}X}
@@ -327,6 +333,15 @@ explore artifacts, publish new works, add versions, read details, comment, like,
 vote, claim locked funds, view wallet state, browse docs, read official posts,
 and participate in forums.
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\textwidth]{app-explore.png}
+  \caption{The official PaperProof application presents protocol artifacts
+  through a static web interface backed by Sui state, Walrus content, and the
+  reference indexer.}
+  \label{fig:whitepaper-app-explore}
+\end{figure}
+
 But the official app is not the protocol's only entrance. A university group
 could build a research portal. A software community could build a release
 dashboard. A data team could build an analytics indexer. A mobile developer
@@ -350,7 +365,7 @@ protocol. Docs, Blog, and Forum are not merely pages about PaperProof; they can
 be represented by PaperProof artifacts and therefore exercise the same storage,
 versioning, comment, and indexing paths expected from third-party applications.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Official app surfaces backed by PaperProof artifacts.}
 \begin{tabularx}{\textwidth}{p{0.22\textwidth}X}
@@ -359,7 +374,7 @@ versioning, comment, and indexing paths expected from third-party applications.
 \midrule
 Docs & Published as artifact series with versioned content. The official comments tree can be locked or archived so documentation remains readable without public discussion threads. \\
 Blog & Published as \code{blog\_post} artifacts with summaries, full content, artifact codes, versions, and official comments. \\
-Forum & Each topic can be represented as a \code{blog\_post} artifact with an official comment tree used as the discussion thread. \\
+Forum & Each topic can be represented as a \code{generic\_file} artifact carrying a Markdown content package and an official comment tree used as the discussion thread. \\
 Copilot prompts & Published as \code{generic\_file} artifacts and selected through the prompt registry by app route. \\
 Memory descriptor & Published as a prompt artifact that explains Copilot memory semantics, schema, and version policy. \\
 \bottomrule
@@ -371,13 +386,31 @@ demonstration of the protocol's value. A visitor can see that PaperProof is not
 only a storage idea; it is an application substrate for versioned knowledge,
 discussion, and agent-readable context.
 
+The current official app is no longer merely a pure static reader. Its shell
+remains a static wallet-first application, but selected public surfaces now use
+a server-assisted reference indexer. Explore, official Docs, Blog, and Forum can
+load through API views and warm caches derived from protocol state and Walrus
+content. This improves responsiveness without making the server the source of
+truth: wallet actions still require user approval, and artifact facts still
+resolve back to Sui objects, Walrus references, content hashes, and deployment
+manifest bindings.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\textwidth]{app-my-space.png}
+  \caption{A connected-wallet view of My Space illustrates how the application
+  can combine wallet-local authority with indexer-assisted public protocol
+  views.}
+  \label{fig:whitepaper-my-space}
+\end{figure}
+
 \section{Application Potential}
 
 PaperProof is deliberately broader than a preprint archive. Its core primitive
 is a durable knowledge artifact, which can support both human-facing and
 agent-facing products.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Potential application families.}
 \begin{tabularx}{\textwidth}{p{0.24\textwidth}X}
@@ -402,7 +435,7 @@ usable by future frontends, indexers, and agents.
 
 PaperProof provides three SDK tracks with different personalities.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{SDK roles.}
 \begin{tabularx}{\textwidth}{p{0.18\textwidth}X}
@@ -451,6 +484,22 @@ SQLite/Postgres sinks, backfill, tail mode, metrics, and deployment drift
 policies. This is the path from a working protocol to a dependable data
 ecosystem.
 
+The reference indexer has also become an application acceleration layer. It can
+serve Explore summary, type list, search, and lookup views while preserving
+compatibility with older array-shaped endpoints. It can prewarm official
+Docs/Blog/Forum content, cache verified markdown or package output, refresh the
+cache after tailing relevant Sui events, and hydrate latest version objects when
+event payloads alone do not contain the full type-specific fields. These choices
+are intentionally conservative: they speed up common reads but keep canonical
+acceptance rules, deployment drift checks, and content verification visible to
+clients.
+
+The distinction is important for ecosystem trust. A reference API may expose
+health, metrics, search, artifact detail, activity, governance, My Space, and
+analytics views, but those views are conveniences over replayable protocol
+facts. A third-party indexer can replace the API, search engine, cache policy,
+or ranking layer without replacing PaperProof itself.
+
 \section{PaperProof Copilot and Agentic Interfaces}
 
 PaperProof Copilot is a browser-side assistant pattern. It can read structured
@@ -483,6 +532,22 @@ structured. Agents can read types, versions, comments, proposals, and events
 instead of scraping arbitrary pages. This opens the door to artifact summaries,
 research assistants, governance explainers, indexer diagnostics, and content
 maintenance agents.
+
+This agentic direction is already being dogfooded. The PaperProof Skill package
+has been published as a PaperProof Software Release artifact, demonstrating that
+an AI-facing protocol client can itself be represented by the protocol it helps
+operate. The important distinction is that agents should prefer SDKs, manifests,
+indexers, and direct object reads over website automation. The official website
+is a human entry point; the skill layer is a protocol client for assistants.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\textwidth]{skill-release-detail.png}
+  \caption{The PaperProof Skill release is itself a protocol artifact, showing
+  how agent-facing tooling can be published, versioned, and verified through the
+  same artifact model.}
+  \label{fig:whitepaper-skill-release}
+\end{figure}
 
 \section{PPRF Utility and Governance Direction}
 
@@ -571,8 +636,11 @@ The seed phase establishes the minimum durable protocol:
   \item official deployment manifest;
   \item TypeScript, Python, and Rust SDKs;
   \item official static web application;
+  \item reference indexer APIs for Explore and official public content caches;
   \item protocol-native Copilot prompt registry;
   \item lightweight Copilot memory registry for governed discovery metadata;
+  \item protocol-published flagship artifacts, including papers, a benchmark
+        dataset, and the PaperProof Skill software release;
   \item yellow paper, academic paper, slides, and developer documentation;
   \item opt-in mainnet integration scripts and examples.
 \end{itemize}
@@ -583,6 +651,10 @@ This phase focuses on making PaperProof pleasant and credible for early users:
 
 \begin{itemize}[leftmargin=*]
   \item polish Explore, Publish, Governance, My Space, Docs, Blog, and Forum;
+  \item keep official public content caches event-driven with periodic
+        reconciliation as a fallback;
+  \item publish formal-verification evidence and mainnet manifest drift checks
+        as ordinary review surfaces;
   \item strengthen PaperProof Copilot with native prompts and wallet-linked memory;
   \item improve Walrus upload/read/verify/extend/transfer flows;
   \item improve examples and tutorials;

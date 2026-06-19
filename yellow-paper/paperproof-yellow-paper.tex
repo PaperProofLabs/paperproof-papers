@@ -9,6 +9,7 @@
 \usepackage{booktabs}
 \usepackage{longtable}
 \usepackage{tabularx}
+\usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{enumitem}
@@ -36,10 +37,15 @@
 \newcommand{\pprf}{\code{PPRF}}
 \newcommand{\manifest}{\code{deployment manifest}}
 
+\graphicspath{{./figs/}}
+
 \title{\textbf{PaperProof Protocol Yellow Paper}\\
 \large A Source-Derived Specification of the Sui-Native Artifact Protocol}
-\author{PaperProof Labs\\\href{mailto:paperproof.labs@gmail.com}{paperproof.labs@gmail.com}}
-\date{Draft v0.1 \\ May 2026}
+\author{PaperProof Labs\\
+\href{mailto:paperproof.labs@gmail.com}{paperproof.labs@gmail.com}\\
+\href{https://paperproof.site/}{https://paperproof.site/}\\
+\href{https://github.com/PaperProofLabs}{https://github.com/PaperProofLabs}}
+\date{Draft v0.2 \\ June 2026}
 
 \begin{document}
 \maketitle
@@ -92,6 +98,8 @@ This document is derived from the PaperProof Move source code and deployment doc
   \item \code{paperproof\_comments::comments}
   \item \code{paperproof\_governance::governance}
   \item \code{paperproof\_governance::governance\_voting}
+  \item \code{paperproof\_prompt\_registry::prompt\_registry}
+  \item \code{paperproof\_memory\_registry::memory\_registry}
 \end{itemize}
 
 The default network is mainnet. Network-specific package and object bindings are not hardcoded into the abstract protocol. They are resolved through deployment manifests. The current mainnet manifest is summarized in Appendix~\ref{app:mainnet}. Future testnet manifests should follow the same schema.
@@ -125,7 +133,7 @@ This document does not define a social feed, recommendation algorithm, full-text
 
 PaperProof separates large content from compact authoritative state. \walrus{} stores large blobs such as PDFs, datasets, software archives, long comments, and static frontend assets. \sui{} stores official protocol objects, typed commitments, object bindings, fees, governance state, and canonical events. The protocol identity of an artifact is not merely a content hash or storage URL. It is a series object under an official root, with typed versions, official comments tree, official likes book, and events accepted under the active deployment.
 
-\begin{figure}[h]
+\begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[
   node distance=10mm,
@@ -226,7 +234,7 @@ Table~\ref{tab:object-inventory} lists the primary protocol objects. Getter func
 
 Artifact types are protocol-recognized constants. They are not arbitrary labels. Adding a new protocol-recognized type is a contract and SDK change followed by governance activation.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Built-in artifact types.}
 \label{tab:artifact-types}
@@ -260,7 +268,7 @@ The artifact code is useful for display and search, but the authoritative identi
 
 Series status values are:
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Series status values.}
 \begin{tabular}{cl}
@@ -301,7 +309,7 @@ The current version status constant is \code{VERSION\_STATUS\_VALID = 0}. Versio
 
 Series and version metadata extensions are vectors of \code{MetadataAttribute}. Limits are:
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Metadata extension limits.}
 \begin{tabular}{lr}
@@ -389,7 +397,7 @@ Every published artifact series receives an official \code{CommentsTree} and \co
 
 \subsection{Comment Tree Status and Comment Status}
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Comment tree and comment status values.}
 \begin{tabular}{lll}
@@ -418,7 +426,7 @@ new comments fail is the tree status check.
 
 Comment content modes are:
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Comment content modes.}
 \begin{tabular}{cl}
@@ -436,7 +444,7 @@ maximum inline-comment byte limit, whose default is 512 bytes. Blob comments
 MUST include non-empty blob ID and blob digest and MAY include a content
 preview. Blob comment limits are:
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Blob comment limits.}
 \begin{tabular}{lr}
@@ -520,7 +528,7 @@ one active entry per wallet owner and app ID. Deleted entries are tombstoned,
 not physically erased, and the active-entry mapping is released so the owner can
 create a new entry later.
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Memory entry usability flags.}
 \begin{tabularx}{\textwidth}{p{0.22\textwidth}X}
@@ -561,7 +569,7 @@ descriptor series/version policy used to explain the memory schema.
 
 \code{FeeManager} stores fee levels rather than arbitrary per-call fee values. The current fee level constants are:
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Fee level constants.}
 \begin{tabular}{cl}
@@ -598,7 +606,7 @@ Comments use fee key \code{FEE\_KEY\_COMMENTS = 0}. Artifact publishing and vers
 
 Direct authority modes are:
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Direct authority modes.}
 \begin{tabular}{cl}
@@ -621,7 +629,7 @@ Permanent disablement is one-way. Once direct authority is permanently disabled,
 
 Proposal types are:
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Proposal types.}
 \begin{tabular}{cl}
@@ -636,7 +644,7 @@ Proposal types are:
 
 Proposal status values are:
 
-\begin{table}[h]
+\begin{table}[htbp]
 \centering
 \caption{Proposal status values.}
 \begin{tabular}{cl}
@@ -788,6 +796,23 @@ An event SHOULD update canonical domain state only if:
 
 Events from historical packages MAY be retained in a non-current historical table, but frontends MUST NOT report current state as complete if they only query an old package or omit active package filters.
 
+\subsection{Derived API Views}
+
+Indexer APIs MAY expose derived views such as artifact summaries, type lists,
+search results, lookup responses, official content caches, and wallet activity
+views. These views are integration products, not new protocol truth. A derived
+view SHOULD include enough source material for clients to explain how it was
+constructed: artifact code, series ID, latest version ID, content hash, Walrus
+blob references, timestamp, accepted package, and cache or refresh time where
+relevant.
+
+An indexer that exposes derived views MUST continue to apply the canonical
+acceptance rules above. It MUST NOT promote stale package events, rejected
+events, failed Walrus reads, or application display policy into protocol facts.
+When a derived view is incomplete because of provider failure, cache warmup,
+object hydration failure, or Walrus unavailability, it SHOULD report degraded
+status rather than silently returning an empty state.
+
 \subsection{Empty State vs Failed Query}
 
 Applications MUST distinguish:
@@ -891,6 +916,32 @@ reserve and certify operations may require distinct stages even when later
 certification, publication, add-version, or registry-update calls can be
 composed.
 
+\subsection{Reference Indexer API Expectations}
+
+The reference indexer MAY provide server-assisted endpoints for the official
+application, including Explore summary, type-scoped item lists, search, lookup,
+official Docs/Blog/Forum content, and compatibility routes for older clients.
+Those endpoints SHOULD be understood as SDK-facing integration surfaces. They
+MUST preserve the same canonical filtering rules as persistent indexer tables.
+
+A reference API MAY expose endpoints such as health, JSON metrics, Prometheus
+metrics, artifact exploration, artifact search, artifact detail, versions,
+comments, activity, governance proposals, wallet-owned artifacts, wallet votes,
+analytics summaries, and deterministic airdrop snapshots. These endpoints MUST
+be documented as derived read APIs. They MUST NOT be described as additional
+Move entrypoints or as replacements for Sui object state, Walrus content
+references, deployment manifests, or canonical event acceptance.
+
+Official public content caches SHOULD be keyed by the official manifest entry,
+series ID, selected version ID, content hash, and Walrus blob reference. A cache
+hit MAY return verified markdown, package metadata, or rendered-safe content
+without repeating the full Walrus fetch path. A cache miss or event-driven
+refresh MUST re-check the chain object or normalized latest version and verify
+the content hash before presenting content as verified. For Docs/Blog/Forum
+entries, event-driven refresh is preferred; periodic reconciliation is only a
+fallback for missed events, manifest drift, service restart, or provider
+transient failure.
+
 \section{Upgrade and Compatibility}
 
 PaperProof is upgradeable during its early protocol phase. Package IDs may change. Object IDs for root, registry, vault, and fee manager may remain stable across some upgrades but MUST NOT be assumed without a manifest and drift check.
@@ -915,6 +966,41 @@ PaperProof security depends on explicit object binding. The following rules are 
   \item AI agents and frontends may explain and prepare transactions, but wallets or signers remain the authority boundary.
 \end{itemize}
 
+\section{Implementation Evidence and Verification Surfaces}
+
+This yellow paper is normative only where it describes contract and integration
+rules. The following figures are included as implementation evidence for the
+current official deployment and developer workflow. They are not themselves
+protocol authority.
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\textwidth]{datasets-type-list.png}
+  \caption{A reference application view derived from canonical artifact events
+  and indexer APIs. Derived views must remain explainable in terms of protocol
+  objects and accepted events.}
+  \label{fig:yellow-datasets-view}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\textwidth]{governance-page.png}
+  \caption{Governance views expose active proposals and voting records, but
+  client display policy must remain distinct from contract-level proposal and
+  voting state.}
+  \label{fig:yellow-governance-view}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\textwidth]{formal-verification-branch.png}
+  \caption{The contracts repository maintains a formal-verification-oriented
+  branch/view alongside implementation sources. Formal artifacts are evidence
+  and review aids; active deployment identity still comes from the manifest and
+  on-chain object bindings.}
+  \label{fig:yellow-formal-verification}
+\end{figure}
+
 \appendix
 
 \section{Mainnet Deployment Snapshot}
@@ -933,9 +1019,9 @@ The current mainnet manifest records:
 \midrule
 \endhead
 \code{network} & \breakcode{mainnet} \\
-\code{protocolVersion} & \breakcode{publishing-v2-governance-v2-comments-v2} \\
+\code{protocolVersion} & \breakcode{publishing-v3-governance-v2-comments-v2} \\
 \code{pprf package} & \breakcode{0x5d2ec9829a9e116de7c2008281a90b96690beb2252af120ad05a25fe13fae0da} \\
-\code{publishing package} & \breakcode{0xe67a6956f37c3182354189d9b77ca14058694aad82522da0c6cb91cfddee4782} \\
+\code{publishing package} & \breakcode{0xc9a75e4514db2a37df6f95b4e2b329c065ac6089953bd2c1c0a0c389835bd3d8} \\
 \code{comments package} & \breakcode{0xaef346fc40bf20af62f4bbbc1608ba2272e80e4ba3d716634026baa589e9aeba} \\
 \code{governance package} & \breakcode{0xc1ced3b8ae5281eeeb8cdb5527978e294c54f14a7fd8d65e7e9502d4ffffb87e} \\
 \code{prompt registry package} & \breakcode{0x10b9c6e90a896dc3244d047e32724d80de0dc697b5ea12c5fdd8925131ed4c59} \\
