@@ -184,6 +184,13 @@ PaperProof consists of six cooperating layers: content, protocol state, events, 
     \label{fig:architecture}
 \end{figure*}
 
+\begin{figure*}[!t]
+    \centering
+    \includegraphics[width=0.92\textwidth]{application-architecture-flow.pdf}
+    \caption{PaperProof application architecture and workflow. Human users and AI agents can enter through official or third-party websites and the PaperProof Skill; the shared execution path binds Sui mainnet contracts, Walrus storage, server-side indexing, and SDK access into one artifact protocol surface.}
+    \label{fig:application_architecture_flow}
+\end{figure*}
+
 \subsection{Content Layer}
 
 The content layer is carried by Walrus. It stores large blobs: PDFs, datasets, source archives, software packages, images, long comments, and other content that should not become Sui object bytes. PaperProof records Walrus references and content commitments so that applications can retrieve and verify the corresponding content. This places PaperProof in the broader family of content-addressed and decentralized storage designs represented by IPFS, Filecoin, and Arweave \cite{benet2014ipfs,protocol_labs2017filecoin,williams2023arweave}, while using Walrus as the storage substrate that is native to the target deployment stack \cite{danezis2025walrus,walrus_docs}.

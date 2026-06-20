@@ -326,6 +326,16 @@ This layering is important. The protocol does not need every future product
 feature in the Move contracts. It needs stable facts. Applications can build
 different experiences around those facts.
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.7\textwidth]{application-architecture-flow.pdf}
+  \caption{PaperProof application architecture and workflow: users and agents
+  enter through official or third-party websites and the PaperProof Skill,
+  while Sui contracts, Walrus storage, the server indexer, and SDKs coordinate
+  one shared artifact protocol.}
+  \label{fig:whitepaper-application-architecture-flow}
+\end{figure}
+
 \section{Official App and Open Entry Points}
 
 The official PaperProof web application is a reference interface. It helps users
