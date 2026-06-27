@@ -233,12 +233,142 @@ centralized repository host, a legal compliance oracle, or a guaranteed reward
 machine. Its core job is to record durable facts around artifacts. Communities,
 applications, reviewers, developers, and markets can interpret those facts.
 
+\section{Ecosystem Position}
+
+PaperProof is easiest to misunderstand when it is introduced as only a blog, a
+forum, a preprint server, or a release page. Those are application surfaces.
+The protocol is broader: it is an artifact layer that sits between the base
+infrastructure of Sui and Walrus and the many products that can be built above
+them.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  layer/.style={draw=ppLine, rounded corners=2pt, align=center, inner sep=8pt, minimum width=0.82\textwidth, text width=0.74\textwidth},
+  sui/.style={layer, fill=blue!8, draw=ppBlue},
+  walrus/.style={layer, fill=cyan!8},
+  protocol/.style={layer, fill=green!10, draw=ppGreen},
+  platform/.style={layer, fill=orange!10, draw=orange!70!black},
+  apps/.style={layer, fill=gray!12},
+  node distance=4mm
+]
+\node[sui] (sui) {\textbf{Sui}\\Object-centric execution, shared objects, governance, and transaction finality};
+\node[walrus, above=of sui] (walrus) {\textbf{Walrus}\\Durable content blobs and static-site delivery};
+\node[protocol, above=of walrus] (protocol) {\textbf{PaperProof Protocol}\\Artifact identity, typed versions, official interactions, and canonical events};
+\node[platform, above=of protocol] (platform) {\textbf{Platform Layer}\\PaperProof SDKs in multiple languages, indexers, developer tooling, and the PaperProof Skill};
+\node[apps, above=of platform] (apps) {\textbf{Application Layer}\\\texttt{paperproof.site}, blog platforms, web3 projects, academic portals, social/community apps, explorers, dashboards, and agent tools};
+\end{tikzpicture}
+\caption{PaperProof's ecosystem position in the Sui and Walrus stack.}
+\label{fig:ecosystem-stack}
+\end{figure}
+
+The strategic point of this stack is that PaperProof does not need to win as a
+single website in order to matter. If the protocol becomes the accepted
+coordinate system for high-value artifacts, then many different clients,
+communities, institutions, and products can reuse the same canonical series and
+version history.
+
+\subsection{Web3 Counterparts}
+
+PaperProof does not have one exact one-to-one competitor in web3. The closest
+overlap comes from three adjacent families:
+
+\begin{itemize}[leftmargin=*]
+  \item onchain publishing systems;
+  \item open social and creator protocols;
+  \item ownership-oriented content infrastructure.
+\end{itemize}
+
+Projects in those families generally optimize around profiles, posts, feeds,
+subscriptions, creator distribution, or broad social coordination. PaperProof
+optimizes around the artifact series: the continuing work, its exact versions,
+its verifiable content references, and the official interaction objects bound
+to it.
+
+This distinction matters. A protocol centered on feeds competes mainly for
+attention and distribution. A protocol centered on artifacts can become shared
+infrastructure for technical papers, software releases, datasets, official
+guides, governed records, and agent-readable outputs that many frontends may
+want to render differently.
+
+\begin{table}[htbp]
+\centering
+\caption{Representative web3 counterpart families.}
+\begin{tabularx}{\textwidth}{p{0.28\textwidth}X}
+\toprule
+\textbf{Family} & \textbf{PaperProof difference} \\
+\midrule
+Onchain publishing products such as Mirror or Paragraph & Strong at author-facing publishing and distribution, but primarily product-shaped rather than artifact-protocol-shaped. \\
+Open social protocols such as Lens or Farcaster & Strong at profiles, graphs, channels, and distribution, but not centered on typed artifact lineage and official version history. \\
+Ownership-oriented content systems such as Crossbell or DeSo & Closer to protocolized content ownership, but still more social/account-centric than artifact-series-centric. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+This means PaperProof can coexist with, integrate beneath, or be embedded by
+other web3 products rather than competing only as a destination website. A
+Mirror-like writing surface, a research portal, or a social app could all use
+PaperProof as the durable artifact layer while keeping their own audience and
+distribution logic.
+
+\subsection{Web2 Counterparts}
+
+There is no single web2 product that fully matches PaperProof. The closest
+functional comparison is a stack:
+
+\begin{quote}
+Ghost or Substack + arXiv or OSF + Zenodo + GitHub Releases + Discourse
+\end{quote}
+
+That comparison is useful because it shows that PaperProof is not trying to
+replace just one familiar surface. It unifies several workflows that are
+usually split across different platforms:
+
+\begin{table}[htbp]
+\centering
+\caption{Web2 functional counterparts to PaperProof.}
+\begin{tabularx}{\textwidth}{p{0.25\textwidth}X}
+\toprule
+\textbf{Functional family} & \textbf{PaperProof relationship} \\
+\midrule
+Long-form publishing & Essays, official notes, and durable docs can live as versioned artifacts rather than only as CMS pages. \\
+Research and preprints & Manuscripts, reports, and supporting records can share one typed artifact model rather than separate repository logic. \\
+Data and archival release & Datasets and reproducibility packages can inherit artifact identity, version history, and governed visibility. \\
+Software release records & Source archives, package hashes, changelogs, and release lineage become first-class protocol records. \\
+Structured discussion & Artifact-bound comments and likes give each series an official interaction surface without requiring one closed forum database. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Web2 platforms usually rely on the application database as the final authority.
+PaperProof shifts authority toward protocol state plus verifiable content
+commitments, so a durable work can remain reconstructable even when one website
+changes policy or disappears.
+
+\subsection{Structural Advantages}
+
+PaperProof's strongest advantages are structural rather than cosmetic.
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Artifact-centric rather than feed-centric.} The primary object is the continuing work, not the post stream.
+  \item \textbf{Version history is protocol core.} Interfaces, SDKs, indexers, and agents can reason about exact lineage instead of treating history as an afterthought.
+  \item \textbf{Multiple artifact families share one model.} Preprints, reports, datasets, software releases, long-form notes, and generic files can all use one identity and version framework.
+  \item \textbf{Control can be assetized without rewriting history.} Control rights can move through a dedicated controller asset while prior versions, authorship, and license commitments remain intact.
+  \item \textbf{Agent-readable by design.} Typed state, prompt routing, and memory-adjacent registries make the protocol easier for AI systems to consume safely.
+  \item \textbf{Compatible with many frontends.} The official site is one interface, not the only valid interpretation surface.
+\end{itemize}
+
+These advantages do not guarantee distribution. Social-first products may still
+be stronger at viral growth or audience tools. But where exact versions,
+official bindings, evidence, and long-term machine readability matter more than
+short-lived feeds, PaperProof has a deeper protocol position.
+
 \section{What Is a PaperProof Artifact?}
 
 A PaperProof artifact is a continuing protocol object, not merely a file. It has
-a series identity, one artifact type, a human-readable artifact code, an owner,
-one or more typed versions, content commitments, Walrus references, official
-comments, official likes, status fields, timestamps, and events.
+a series identity, one artifact type, a human-readable artifact code, a
+controller, one or more typed versions, content commitments, Walrus references,
+official comments, official likes, status fields, timestamps, and events.
 
 \subsection{Artifact Series}
 
@@ -247,6 +377,13 @@ A preprint may have revised versions. A dataset may be corrected. A technical
 report may become more complete. A blog post may receive a canonical update. A
 generic file may be replaced by a clearer version. PaperProof models these as
 versions under one series rather than unrelated uploads.
+
+The protocol also separates content license from operational control. The right
+to publish the next version, manage series-level metadata, and control official
+discussion policy can travel with a dedicated controller asset. This makes
+artifact control portable without rewriting historical authorship, license
+terms, or prior version commitments. In effect, a PaperProof artifact can be a
+durable digital work and a transferable control surface at the same time.
 
 \subsection{Typed Versions}
 
@@ -328,7 +465,7 @@ different experiences around those facts.
 
 \begin{figure}[htbp]
   \centering
-  \includegraphics[width=0.7\textwidth]{application-architecture-flow.pdf}
+  \includegraphics[width=0.99\textwidth]{application-architecture-flow.pdf}
   \caption{PaperProof application architecture and workflow: users and agents
   enter through official or third-party websites and the PaperProof Skill,
   while Sui contracts, Walrus storage, the server indexer, and SDKs coordinate
@@ -431,6 +568,7 @@ Research and open science & Versioned manuscripts, datasets, reproducibility pac
 Software communities & Release records, source and package commitments, changelogs, governance evidence, and discussion threads. \\
 Protocol communities & Official docs, blogs, forums, proposal context, audit materials, and upgrade records represented as artifacts. \\
 Agentic workflows & Durable prompts, memory descriptors, reusable reports, datasets, logs, and intermediate outputs that agents can resolve over time. \\
+Artifact marketplaces and stewardship transfer & Controller assets can let a series move between individuals, teams, funds, labs, or acquiring platforms without breaking public version history. \\
 Independent portals & University archives, community frontends, wallets, explorers, dashboards, and indexers using the same public protocol facts. \\
 \bottomrule
 \end{tabularx}
@@ -440,6 +578,18 @@ These applications do not need to share one presentation layer. They share a
 typed protocol substrate. That distinction is central to PaperProof's
 long-term potential: the same artifact can outlive a particular site and remain
 usable by future frontends, indexers, and agents.
+
+Because artifact control is separable from content license, the application
+surface can also support a broader artifact economy. A research series, a
+technical publication line, a curated data product, or an open-source release
+track can keep immutable history while its control rights move between wallets,
+organizations, or market participants through ordinary Sui asset flows.
+
+This possibility matters strategically because it gives PaperProof a second
+growth surface beyond publishing alone. The protocol can support not only
+creation and reading, but also stewardship transfer, curation businesses,
+treasury-owned knowledge assets, community-maintained release lines, and
+artifact portfolios that remain legible to outside applications.
 
 \section{SDK and Developer Ecosystem}
 
@@ -476,6 +626,7 @@ PaperProof SDKs should make common actions short and safe:
   \item parse typed transaction results;
   \item handle provider failure honestly;
   \item query comments, likes, proposals, and voting records;
+  \item resolve controller state and artifact-control transfers without conflating them with content licenses or prior authorship;
   \item publish, read, verify, extend, and transfer Walrus content through a simplified ContentService;
   \item watch canonical events without accepting look-alike package events.
 \end{itemize}

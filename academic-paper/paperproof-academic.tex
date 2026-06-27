@@ -114,6 +114,24 @@ Sui supplies programmable objects and Walrus supplies durable content, but neith
 
 This hypothesis shifts the evaluation question. The relevant question is not whether bytes can be uploaded to decentralized storage. It is whether stored content can become a verifiable, versioned, discussable, indexable, and agent-readable object without forcing every future client to trust one hosted service.
 
+This framing also clarifies where PaperProof sits relative to adjacent systems.
+In web3, the closest overlaps are publishing and social protocols that center
+creators, profiles, posts, or audience distribution. In web2, the closest
+counterparts are not one product but a stack of systems such as long-form
+publishing tools, preprint repositories, archival data hosts, software release
+pages, and structured discussion forums. PaperProof's claim is that artifact
+series and typed version lineage deserve their own protocol layer rather than
+remaining scattered across unrelated application databases.
+
+This distinction is not merely branding. Systems such as Mirror or Paragraph
+optimize around publishing surfaces; systems such as Lens or Farcaster optimize
+around social graphs and distribution; repository and archive systems optimize
+around one content domain at a time. PaperProof instead treats the continuing
+artifact series as the stable object of coordination. That design choice makes
+it more suitable for durable technical and knowledge works whose meaning depends
+on exact lineage, official interaction bindings, and machine-resolvable
+semantics across multiple frontends.
+
 \section{Design Goals and Non-Goals}
 
 PaperProof is shaped by a narrow principle: the protocol should record durable artifact facts, not replace every platform that surrounds an artifact.
@@ -175,7 +193,10 @@ The sixth principle is workflow composition. Sui Programmable Transaction Blocks
 
 \section{Layered Architecture}
 
-PaperProof consists of six cooperating layers: content, protocol state, events, query/indexing, applications, and agentic assistance. Fig.~\ref{fig:architecture} summarizes the intended formal release architecture.
+PaperProof consists of seven cooperating layers: Sui execution, Walrus content,
+protocol state, platform tooling, events and indexing, applications, and
+agentic assistance. Fig.~\ref{fig:architecture} summarizes the intended formal
+release architecture.
 
 \begin{figure*}[!t]
     \centering
@@ -186,10 +207,26 @@ PaperProof consists of six cooperating layers: content, protocol state, events, 
 
 \begin{figure*}[!t]
     \centering
-    \includegraphics[width=0.92\textwidth]{application-architecture-flow.pdf}
+    \includegraphics[width=0.99\textwidth]{application-architecture-flow.pdf}
     \caption{PaperProof application architecture and workflow. Human users and AI agents can enter through official or third-party websites and the PaperProof Skill; the shared execution path binds Sui mainnet contracts, Walrus storage, server-side indexing, and SDK access into one artifact protocol surface.}
     \label{fig:application_architecture_flow}
 \end{figure*}
+
+At a strategic level, the stack can be read bottom-up as follows:
+\begin{enumerate}
+    \item Sui provides object-centric execution, shared objects, and transaction finality.
+    \item Walrus provides durable content blobs and static-site delivery.
+    \item PaperProof provides artifact identity, typed versions, official interaction objects, and canonical events.
+    \item Platform tooling provides multi-language SDKs, transaction builders, developer workflows, and the PaperProof Skill.
+    \item Events and indexing provide canonical filters, derived views, search, and reconstructable history for independent clients.
+    \item Applications provide end-user experiences such as \texttt{paperproof.site}, academic portals, release dashboards, community sites, and domain-specific frontends.
+    \item Agentic interfaces provide artifact-aware assistance over the same protocol state rather than over scraped page fragments.
+\end{enumerate}
+
+This layered reading highlights an important ecosystem property: PaperProof is
+not only an application, and it is not only storage. It is the artifact
+coordination layer that allows many presentation and automation surfaces to
+resolve the same continuing work.
 
 \subsection{Content Layer}
 
@@ -221,6 +258,13 @@ The first official application is a static PaperProof web app rather than a serv
 \end{figure}
 
 This application is official, but it is not exclusive. A university archive, a research-group portal, a software release dashboard, a mobile app, a community forum, or an autonomous indexing service can all use the same protocol objects. PaperProof's goal is therefore not to trap users inside one frontend. It is to make the protocol facts sufficiently typed and discoverable that multiple frontends can coexist.
+
+This is where PaperProof diverges from both social-first and publication-first
+systems. A feed-oriented system primarily coordinates attention. A conventional
+publishing product primarily coordinates a website. PaperProof primarily
+coordinates the continuing artifact itself so that different interfaces can
+render, discuss, monetize, or analyze the same series without redefining its
+identity.
 
 The application layer may also make policy choices that are intentionally not global protocol mutations. An official frontend may hide, de-rank, label, or refuse to preview content because of abuse, legal risk, provider failure, or product policy. Such non-display does not erase Sui records or decentralized-storage content. This separation is a practical consequence of combining durable infrastructure with independently operated presentation layers.
 
@@ -311,6 +355,23 @@ Ownership in PaperProof is not one-dimensional. A user may own a series, another
 
 This distinction is especially important for frontends. A connected wallet may be able to comment but not add a version. It may be able to vote but not execute a proposal. It may have locked funds that can be claimed only after finalization. A good SDK should expose these differences as typed state rather than making the frontend infer them from low-level failures.
 
+PaperProof further separates content license from artifact control. The control
+surface of a series can be represented as a dedicated controller asset bound to
+that series. Holding the controller asset authorizes version publication,
+series-scoped metadata changes, and official moderation decisions for the
+artifact. Transferring that asset changes operational control without rewriting
+historical authorship, altering prior licenses, or mutating old version
+records. This distinction matters both technically and economically: it keeps
+historical evidence stable while allowing artifact control to behave as a
+portable digital asset compatible with standard Sui ownership and transfer
+flows.
+
+The portability of control has an additional systems implication. It allows a
+single artifact series to remain continuous across maintainer turnover,
+institutional handoff, acquisition, treasury assignment, or community rescue
+without forcing a fork into a new public identity. In other words, PaperProof
+can preserve archival continuity while still allowing future authority to move.
+
 \section{Artifact Lifecycle}
 
 PaperProof models artifact publication as a versioned protocol lifecycle rather than a single upload. Fig.~\ref{fig:lifecycle} shows the core path.
@@ -339,6 +400,21 @@ Adding a version is a continuation of an existing series. Some fields are immuta
 Version addition uses the same content-binding pattern as initial publication, but it is stricter in what it allows to change. A new version may replace content, update type-specific fields, add metadata, or change status-like information according to the type rules. It may not transform a preprint into a dataset or rewrite the artifact code. This keeps the series meaningful over time.
 
 The version chain also gives applications a natural comparison surface. A reader can see whether a dataset changed format, whether a software release changed package hash, whether a technical report revised its specification text, or whether a preprint changed title or abstract. PaperProof does not judge the quality of the change; it preserves a typed history that tools can interpret.
+
+Because series control is portable, version publication is also portable. The
+entity authorized to append the next version can change over time through
+controller-asset transfer while the series identity, old versions, and official
+artifact code remain continuous. This property makes artifact markets,
+institutional handoffs, and multi-stage stewardship possible without fragmenting
+the public history of the work.
+
+This is one way PaperProof differs from both ordinary CMS publishing and simple
+hash-registration systems. In a CMS, control transfer is typically an internal
+database permission change tied to one operator. In a hash registry, control may
+be ambiguous once multiple tools or forks claim to represent the same work. In
+PaperProof, the series identity remains public, the historical record remains
+append-only, and future control can still be reassigned through a visible
+protocol asset.
 
 \subsection{Commenting, Liking, and Moderation}
 
@@ -712,7 +788,7 @@ Sui's object-centric model makes protocol identity and relationship binding a fi
 
 \subsection{PaperProof's Distinction}
 
-The main distinction is that PaperProof combines storage references, object-bound protocol identity, typed version history, official interactions, governance, SDKs, deployment manifests, and indexer primitives in one artifact infrastructure layer. A storage network alone does not define official comments or artifact types. A preprint server alone is usually an application authority. A provenance log alone does not provide SDK-level transaction builders, typed views, watch APIs, or checkpoint indexer support. PaperProof's contribution is the integration boundary: it defines enough protocol structure for independent applications to reconstruct artifact state while leaving social judgment, search ranking, moderation, and presentation to higher layers.
+The main distinction is that PaperProof combines storage references, object-bound protocol identity, typed version history, official interactions, governance, SDKs, deployment manifests, controller-portable authority, and indexer primitives in one artifact infrastructure layer. A storage network alone does not define official comments or artifact types. A preprint server alone is usually an application authority. A provenance log alone does not provide SDK-level transaction builders, typed views, watch APIs, or checkpoint indexer support. Social protocols often optimize around profiles, messages, and distribution, while web publishing stacks often split documents, data, releases, and discussion across separate systems. PaperProof's contribution is the integration boundary: it defines enough protocol structure for independent applications to reconstruct artifact state while leaving social judgment, search ranking, moderation, and presentation to higher layers.
 
 \section{Conclusion}
 

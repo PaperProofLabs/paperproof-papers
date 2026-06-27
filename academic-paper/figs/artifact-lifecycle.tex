@@ -15,13 +15,13 @@
     node distance=0.55cm
 ]
     \node[flowstep] (type) {Choose artifact type};
-    \node[flowstep, right=of type] (meta) {Prepare common + type metadata};
+    \node[flowstep, above=0.95cm of type] (meta) {Prepare common + type metadata};
     \node[flowstep, right=of meta] (content) {Write content to Walrus};
     \node[hot, right=of content] (publish) {Publish ArtifactSeries};
     \node[flowstep, right=of publish] (events) {Emit canonical events};
     \node[flowstep, below=0.95cm of publish] (addv) {Add typed version};
     \node[flowstep, below=0.95cm of events] (interact) {Comment, like, govern};
-    \node[flowstep, below=0.95cm of content] (query) {Query and index state};
+    \node[flowstep, right=0.95cm of events] (query) {Query and index state};
 
     \draw[arrow] (type) -- (meta);
     \draw[arrow] (meta) -- (content);
@@ -29,7 +29,7 @@
     \draw[arrow] (publish) -- (events);
     \draw[arrow] (publish) -- (addv);
     \draw[arrow] (events) -- (interact);
-    \draw[arrow] (events) |- (query);
+    \draw[arrow] (events) -- (query);
     \draw[arrow] (addv) -- (interact);
 \end{tikzpicture}
 \end{document}

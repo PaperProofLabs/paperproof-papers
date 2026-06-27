@@ -142,9 +142,9 @@ PaperProof separates large content from compact authoritative state. \walrus{} s
   arr/.style={-{Latex[length=2mm]}, thick, draw=ppLine}
 ]
 \node[box] (content) {Walrus\\content blobs};
-\node[core, right=13mm of content] (sui) {Sui protocol state\\objects and events};
-\node[box, right=13mm of sui] (sdk) {SDKs, indexers,\\frontends, agents};
-\node[box, below=10mm of sui] (manifestNode) {Deployment manifest\\package and object bindings};
+\node[core, right=23mm of content] (sui) {Sui protocol state\\objects and events};
+\node[box, right=33mm of sui] (sdk) {SDKs, indexers,\\frontends, agents};
+\node[box, below=20mm of sui] (manifestNode) {Deployment manifest\\package and object bindings};
 \draw[arr] (content) -- node[above, font=\small]{blob IDs, hashes} (sui);
 \draw[arr] (sui) -- node[above, font=\small]{typed reads/events} (sdk);
 \draw[arr] (manifestNode) -- (sdk);
@@ -156,7 +156,7 @@ PaperProof separates large content from compact authoritative state. \walrus{} s
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.7\textwidth]{application-architecture-flow.pdf}
+\includegraphics[width=0.99\textwidth]{application-architecture-flow.pdf}
 \caption{Application-level architecture and flow. The official or third-party
 website and the PaperProof Skill submit and query artifact workflows through
 the same Sui mainnet contract packages, Walrus content layer, server-side
@@ -217,7 +217,9 @@ Table~\ref{tab:object-inventory} lists the primary protocol objects. Getter func
 \breakcode{TypeRegistry} & Registry of supported artifact types. Stores registry version, registry ID, and a table from artifact type code to \code{TypeInfo}. \\
 \breakcode{TypeInfo} & Per-type metadata: artifact type, type index object ID, enabled flag, schema version, minimum protocol version, creation timestamp, and update timestamp. \\
 \breakcode{TypeIndex} & Per-type object used to support artifact code mapping and type-scoped discovery. It stores version, registry ID, and artifact type. \\
-\breakcode{ArtifactSeries} & Stable identity of a continuing artifact. Stores type, code, owner, version IDs, current version, official comments tree, official likes book, status, UI status, metadata extensions, and timestamps. \\
+\breakcode{ArtifactSeries} & Stable identity of a continuing artifact. Stores type, code, controller binding and compatibility owner mirror, version IDs, current version, official comments tree, official likes book, status, UI status, metadata extensions, and timestamps. \\
+\breakcode{ControllerNFT} & Transferable control asset for one artifact series. Stores series binding, artifact type, control-record binding, issuance metadata, and transfer-relevant state. Holding the NFT is the canonical series-control authority. \\
+\breakcode{ArtifactControlRecord} & Canonical control-binding object. Stores the series ID, controller NFT ID, current controller mirror, compatibility owner mirror, official comments tree binding, authority mode, and timestamps used by contracts, SDKs, and indexers to resolve series authority. \\
 \breakcode{CommonArtifactHeader} & Shared version header for all typed version records. Stores series ID, type, version number, previous version ID, author, content hash, Walrus references, content type, metadata extensions, status, and timestamp. \\
 \breakcode{PreprintVersionRecord} & Typed version record for preprints. Adds title, abstract, authors, keywords, field, license, and page count. \\
 \breakcode{BlogPostVersionRecord} & Typed version record for blog posts. Adds title, summary, tags, and language. \\
@@ -225,7 +227,7 @@ Table~\ref{tab:object-inventory} lists the primary protocol objects. Getter func
 \breakcode{DatasetVersionRecord} & Typed version record for datasets. Adds title, description, format, file count, size in bytes, license, and keywords. \\
 \breakcode{SoftwareReleaseVersionRecord} & Typed version record for software releases. Adds project name, version name, source hash, package hash, changelog, license, and repository URL. \\
 \breakcode{GenericFileVersionRecord} & Typed version record for generic files. Adds title, description, filename, file size, and license. \\
-\breakcode{CommentsTree} & Official comment space for a series. Stores target series, target artifact type, root comment, nodes table, owner, status, fee manager binding, max inline size, depth limit, and likes book ID. \\
+\breakcode{CommentsTree} & Official comment space for a series. Stores target series, target artifact type, root comment, nodes table, controller-aligned moderation owner mirror, status, fee manager binding, max inline size, depth limit, and likes book ID. \\
 \breakcode{CommentNode} & Single comment node. Stores parent, author, depth, content mode, inline content or blob references, children count, timestamps, and status. \\
 \breakcode{LikesBook} & Official like state for a series. Stores comments tree ID, target series ID, target type, like count, and address-to-like table. \\
 \breakcode{GovernanceVault} & Authority and treasury boundary. Stores governance authority, upgrade authority, active operator, pending operator transfer, fee recipient, direct authority mode, and related capability state. \\
@@ -275,6 +277,19 @@ The artifact code is useful for display and search, but the authoritative identi
 \subsection{Series Identity}
 
 \code{ArtifactSeries} is the protocol identity of a continuing work. A series MUST have exactly one artifact type and one artifact code. A series MAY have many versions up to \code{MAX\_VERSIONS\_PER\_SERIES = 168}. The current implementation stores version IDs in a vector and tracks the current version number and current version object ID.
+
+Every controlled series MUST also have exactly one canonical controller asset
+represented by a \code{ControllerNFT} and exactly one \code{ArtifactControlRecord}
+that binds the series, the controller NFT, and the official comments tree. The
+controller NFT is the source of write authority for series-scoped operations.
+The control record exists so contracts, SDKs, and indexers can resolve control
+state deterministically without inferring it only from frontend conventions.
+
+Control authority is distinct from content license and historical authorship.
+Transferring the controller NFT changes who may publish new versions, update
+series-level metadata, and exercise artifact-scoped moderation authority. It
+does not rewrite prior versions, change the recorded author of a version, or
+replace the license terms committed by earlier version records.
 
 Series status values are:
 
@@ -362,8 +377,10 @@ Publication performs the following logical steps:
   \item collect the configured artifact fee, if any;
   \item create an \code{ArtifactSeries};
   \item create a typed version record with version number 1;
+  \item mint the series \code{ControllerNFT} and create the \code{ArtifactControlRecord};
   \item create the official comments tree and likes book;
-  \item share the series, comments tree, likes book, and typed version record;
+  \item bind controller authority to the official comments tree moderation boundary;
+  \item share the series, comments tree, likes book, and typed version record, and return the controller NFT to the publisher wallet;
   \item emit \code{ArtifactPublishedEvent} and related creation events.
 \end{enumerate}
 
@@ -380,11 +397,39 @@ Add-version functions are also type-specific:
   \item \code{add\_generic\_file\_version}
 \end{itemize}
 
-An add-version transaction MUST be authorized by the current series owner, MUST match the series artifact type, MUST keep the series within the maximum version count, MUST use official root/registry/vault/fee manager bindings, and MUST produce a typed version record for the same artifact type. It emits \code{ArtifactVersionAddedEvent}.
+An add-version transaction MUST be authorized by the holder of the series
+\code{ControllerNFT} or by a protocol-recognized execution path that presents
+controller authority for the same series. It MUST match the series artifact
+type, MUST keep the series within the maximum version count, MUST use official
+root/registry/vault/fee manager bindings, and MUST produce a typed version
+record for the same artifact type. It emits \code{ArtifactVersionAddedEvent}.
 
 \subsection{Ownership Transfer}
 
-\code{transfer\_artifact\_owner} changes the owner of a series. The caller MUST be the current series owner. The new owner MUST be nonzero. The implementation also updates the official comments tree owner boundary so that moderation authority follows artifact ownership.
+Artifact control is transferred by transferring the series \code{ControllerNFT}.
+The receiving address becomes the canonical controller and therefore gains the
+right to add versions, update series metadata, and administer artifact-scoped
+moderation policy. Implementations MAY maintain series-level and comments-tree
+owner mirrors for compatibility and display, but such mirrors are not the
+canonical source of control authority.
+
+Controller transfer MUST NOT mutate prior version records, prior version
+authors, committed content hashes, historical Walrus references, or prior
+license selections. It changes future operational authority over the series; it
+does not rewrite the historical evidence already committed by earlier versions.
+
+Indexers and applications SHOULD resolve current series control from the
+\code{ControllerNFT} plus the bound \code{ArtifactControlRecord}, not from stale
+display mirrors or cached frontend ownership assumptions. If an application
+shows a compatibility owner mirror, that mirror SHOULD be treated as advisory
+display state rather than as the final source of protocol authority.
+
+Marketplace listing, escrow, auction, lending, or bundled sale of a
+\code{ControllerNFT} MAY be implemented by external Sui infrastructure. Such
+commercial flows are outside PaperProof's protocol scope until a valid NFT
+transfer settles on chain. Once settlement occurs, the receiving holder becomes
+the canonical controller under the same artifact series ID and control-record
+binding.
 
 \section{Walrus Content References}
 
@@ -823,6 +868,12 @@ When a derived view is incomplete because of provider failure, cache warmup,
 object hydration failure, or Walrus unavailability, it SHOULD report degraded
 status rather than silently returning an empty state.
 
+For controller-aware views, the indexer SHOULD resolve and expose the current
+controller NFT owner, controller NFT ID, control-record ID, and any relevant
+compatibility mirrors separately. A client MUST NOT infer canonical artifact
+control from a stale mirrored owner field when controller-object state is
+available.
+
 \subsection{Empty State vs Failed Query}
 
 Applications MUST distinguish:
@@ -908,6 +959,7 @@ SDKs are not protocol truth, but they SHOULD encode the following rules:
   \item expose memory registry builders for creating, deleting, disabling, and governing memory entries without treating private memory bodies as chain data;
   \item expose query providers and watch APIs that apply canonical filters;
   \item preserve cause chains in errors and avoid treating provider failure as empty protocol state;
+  \item expose controller-resolution, controller-transfer, and authority-check helpers that distinguish control rights from content license fields and historical authorship;
   \item expose Walrus content helper functions for publish, read, verify, extend, and owned-blob transfer while preserving Walrus ownership and shared-blob semantics.
 \end{itemize}
 
