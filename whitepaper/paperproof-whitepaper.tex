@@ -243,21 +243,7 @@ them.
 
 \begin{figure}[htbp]
 \centering
-\begin{tikzpicture}[
-  layer/.style={draw=ppLine, rounded corners=2pt, align=center, inner sep=8pt, minimum width=0.82\textwidth, text width=0.74\textwidth},
-  sui/.style={layer, fill=blue!8, draw=ppBlue},
-  walrus/.style={layer, fill=cyan!8},
-  protocol/.style={layer, fill=green!10, draw=ppGreen},
-  platform/.style={layer, fill=orange!10, draw=orange!70!black},
-  apps/.style={layer, fill=gray!12},
-  node distance=4mm
-]
-\node[sui] (sui) {\textbf{Sui}\\Object-centric execution, shared objects, governance, and transaction finality};
-\node[walrus, above=of sui] (walrus) {\textbf{Walrus}\\Durable content blobs and static-site delivery};
-\node[protocol, above=of walrus] (protocol) {\textbf{PaperProof Protocol}\\Artifact identity, typed versions, official interactions, and canonical events};
-\node[platform, above=of protocol] (platform) {\textbf{Platform Layer}\\PaperProof SDKs in multiple languages, indexers, developer tooling, and the PaperProof Skill};
-\node[apps, above=of platform] (apps) {\textbf{Application Layer}\\\texttt{paperproof.site}, blog platforms, web3 projects, academic portals, social/community apps, explorers, dashboards, and agent tools};
-\end{tikzpicture}
+\input{figs/ecosystem-stack.tikz}
 \caption{PaperProof's ecosystem position in the Sui and Walrus stack.}
 \label{fig:ecosystem-stack}
 \end{figure}
